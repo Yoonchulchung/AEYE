@@ -20,6 +20,10 @@ AEYE 프로젝트는 Docker를 사용하여 환경에 영향을 받지 않고 �
 
 AI 모델은 TensorFlow를 사용하였으며, AI가 추론한 데이터를 기반으로 GPT를 활용하여 진단에 도움이 되도록 설계했습니다. 웹 서버와 AI 서버는 다음과 같은 프레임워크를 기반으로 설계되었습니다.    
 
+이번 한이음 프로젝트에서는 Web Router, AI 드라이버, 모니터링 서버를 제작했습니다. Web Router를 통해 FrontEnd인 Next.js와 Database인 MySQL을 연결하여 AI 서비스가 원활하게 동작하도록 개발했습니다. 프로젝트에서 제공해야 하는 서비스가 증가하더라도 AI 서비스가 오작동하지 않도록 하기 위해 Application Layer, Middleware, HAL Driver로 서버 아키텍처를 설계하고 코드를 작성했습니다. AEYE 프로젝트에 사용되는 AI 모델이 TensorFlow 1.12 버전을 지원하고 있어, 이를 TensorFlow 2.17 버전으로 교체하는 작업을 진행했습니다
+
+
+
 AEYE 프로젝트 전체 프레임워크:     
 <p align="center">
   <img src="images/architecture_AEYE.png" alt="Centered Image" style="width:50%;"/>
