@@ -1,0 +1,25 @@
+#############################################################
+# AEYE AI OpticNet Dependencies
+# Created By Yoonchul Chung
+# Created At 2024.08.11
+# Welcome to Visit Github : https://github.com/Yoonchulchung
+#############################################################
+
+# colorama
+colorama
+
+# pytest
+pytest
+
+# python-dotenv
+python-dotenv
+
+# requests
+requests
+
+pycm==1.9
+matplotlib
+sklearn
+
+aiohttp
+asyncio
