@@ -1,0 +1,32 @@
+version: '3.3'
+
+services:
+  AEYE-Router:
+    image: aeye_web_router:1.0
+    container_name: router_container
+    build:
+      context: ..
+      dockerfile: Docker/Network_Router/Dockerfile
+    ports:
+    - "2000:2000"
+    volumes:  
+    - ../AEYE_Router/:/app/AEYE_Router
+    networks:
+      - aeye_network
+    command: python manage.py runserver 0.0.0.0:2000
+  AEYE-SQL:
+    image: mysql:5.7
+    container_name: web_sql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: my-secret-pw
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+    volumes:
+      - ../AEYE_MYSQL:/var/lib/mysql
+  ports:
+  - "3306:3306"
+    
+networks:
+  aeye_network:
+    driver: bridge

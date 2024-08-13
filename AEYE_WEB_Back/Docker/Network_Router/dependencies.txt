@@ -1,0 +1,38 @@
+#############################################################
+# AEYE WEB Router Dependencies
+# Created By Yoonchul Chung
+# Created At 2024.08.07
+# Welcome to Visit Github : https://github.com/Yoonchulchung
+#############################################################
+
+# Django Web Framework
+Django==3.2
+
+# REST API Framework
+djangorestframework==3.13.1
+
+# request
+requests
+
+# nodejs
+nodejs
+
+# npm
+npm
+
+# pytest
+pytest
+
+# colorama
+colorama
+
+# pillow
+pillow
+
+# mysqlclient
+mysqlclient
+
+asyncio
+aiohttp
+
+setuptools
