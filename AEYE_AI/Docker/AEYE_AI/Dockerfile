@@ -13,11 +13,8 @@ COPY /Docker/AEYE_AI/dependencies.txt /app
 RUN pip install --upgrade pip
 RUN pip install -r dependencies.txt
 
-RUN apt-get update & apt-get install -y libgl1-mesa-glx --fix-missing
+RUN apt-get update && apt-get install -y libgl1-mesa-glx --fix-missing
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 
 EXPOSE 5000
-
-CMD ["python", "manage.py"]
-
