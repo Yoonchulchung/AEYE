@@ -5,16 +5,12 @@
 # Welcome to Visit Github : https://github.com/Yoonchulchung
 #############################################################
 
-# colorama
+opencv-python
 colorama
 
-# pytest
 pytest
 
-# python-dotenv
 python-dotenv
-
-# requests
 requests
 
 pycm==1.9

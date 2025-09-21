@@ -1,22 +1,6 @@
 version: '3.3'
 
 services:
-  AEYE-NetOper:
-    image: aeye_network_operator:1.0
-    container_name: network_operator_container
-    build:
-      context: ..
-      dockerfile: Docker/AEYE_Network_Operator/Dockerfile
-    ports:
-    - "3000:3000"
-    volumes:  
-    - ../AEYE_Network_Operator/:/app/
-    tty: true
-    stdin_open: true
-    networks:
-      - ai_network
-    command: python manage.py runserver 0.0.0.0:3000
-    
   AEYE-OpticNet:
     image: aeye_opticnet:1.0
     container_name: opticnet_container
@@ -28,7 +12,7 @@ services:
     - "6006:6006"
     - "8888:8888"
     volumes:
-    - ../AEYE_AI/:/app/AEYE_AI/
+    - /home/:/home/
     environment:
         - PYTHONPATH=/app/
     networks:
