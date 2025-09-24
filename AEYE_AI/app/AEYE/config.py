@@ -12,7 +12,7 @@ import types
 
 
 @dataclass
-class FastAPIConfig:
+class FlaskConfig:
     HOST: str = "localhost"
     PORT: int = 8000
     API_PREFIX: str = "/fastapi"
@@ -23,7 +23,7 @@ class FastAPIConfig:
 @dataclass
 class Config:
     type: str = "develop"
-    FASTAPI: FastAPIConfig = field(default_factory=FastAPIConfig)
+    FASTAPI: FlaskConfig = field(default_factory=FlaskConfig)
     
 
 def _get_config_file(config_path : str):
@@ -67,13 +67,13 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
     
     fastapi_raw = _get(config_data, "FASTAPI", {}) or {}
 
-    fastapi = FastAPIConfig(
-        HOST=_get(fastapi_raw, "HOST", FastAPIConfig.HOST),
-        PORT=int(_get(fastapi_raw, "PORT", FastAPIConfig.PORT)),
-        API_PREFIX=_get(fastapi_raw, "API_PREFIX", FastAPIConfig.API_PREFIX),
-        WORKERS=int(_get(fastapi_raw, "WORKERS", FastAPIConfig.WORKERS)),
-        RELOAD=_get(fastapi_raw, "RELOAD", FastAPIConfig.RELOAD),
-        LOG_LEVEL=_get(fastapi_raw, "LOG_LEVEL", FastAPIConfig.LOG_LEVEL),
+    fastapi = FlaskConfig(
+        HOST=_get(fastapi_raw, "HOST", FlaskConfig.HOST),
+        PORT=int(_get(fastapi_raw, "PORT", FlaskConfig.PORT)),
+        API_PREFIX=_get(fastapi_raw, "API_PREFIX", FlaskConfig.API_PREFIX),
+        WORKERS=int(_get(fastapi_raw, "WORKERS", FlaskConfig.WORKERS)),
+        RELOAD=_get(fastapi_raw, "RELOAD", FlaskConfig.RELOAD),
+        LOG_LEVEL=_get(fastapi_raw, "LOG_LEVEL", FlaskConfig.LOG_LEVEL),
     )
     
     return Config(

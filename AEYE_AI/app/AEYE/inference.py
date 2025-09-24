@@ -1,7 +1,9 @@
-import tensorflow as tf
 import numpy as np
 import cv2
+from langchain.llms import OpenAI, HuggingFaceHub
+from langchain.chains import RetrievalQA
 
+from AEYE.AI.models.octdl import generate_model
 
 class AEYE_Inference():
     
@@ -17,26 +19,34 @@ class AEYE_Inference():
             raise RuntimeError("AEYE_Inference is not initialized yet")
         return cls._instance
     
-    def __init__(self, weight_path, dataset_name):
+    def __init__(self, octdl_model, llm_model):
         
-        self.weight_path = weight_path
-        self.dataset_name = dataset_name
+        self.vision_model = octdl_model
+        self.llm_model = llm_model
         
-        self.model = tf.keras.models.load_model(weight_path)
-
-        if dataset_name=='Srinivasan2014':
-            self.classes=['AMD', 'DME','NORMAL']
-        else:
-            self.classes = ['CNV', 'DME','DRUSEN','NORMAL']
-        
+        self.qa_chain = RetrievalQA.from_chain_type(
+            llm=self.llm,
+            retriever=self.my_vectorstore.as_retriever()
+        )
     
-    def inference(self, img):
+    def _vision_inference(self, img):
         img = _image_preprocessing(img)
 
-        predictions = self.model.predict(img)
-        predicted_class = np.argmax(predictions, axis=-1)
-
-        return predicted_class
+        pred = self.vision_model(img)
+        
+        return pred
+    
+    def _llm_inference(self, pred):
+        
+        return self.qa_chain.run(f"{pred}를 진료하는 방법을 설명해줘")
+        
+        
+    def inference(self, img):
+        
+        pred = self._vision_inference(img)
+        llm_result = self._llm_inference(pred)
+        
+        return llm_result
         
 
 def _image_preprocessing(img):
