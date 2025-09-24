@@ -1,6 +1,6 @@
 import gc
 from typing import Any, Callable
-from langchain.llms import OpenAI, HuggingFaceHub
+from langchain_community.llms import OpenAI, HuggingFaceHub
 from AEYE.AI.models.octdl import generate_model
 import torch
 

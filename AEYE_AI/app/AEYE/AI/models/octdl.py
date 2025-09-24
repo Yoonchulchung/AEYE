@@ -6,10 +6,10 @@ import timm
 def generate_model(cfg):
     model = _build_model(cfg)
 
-    if cfg.ai.checkpoint:
-        weights = torch.load(cfg.ai.checkpoint)
+    if cfg.Vision_AI.checkpoint:
+        weights = torch.load(cfg.Vision_AI.checkpoint)
         model.load_state_dict(weights, strict=True)
-        print('Load weights form {}'.format(cfg.ai.checkpoint))
+        print('Load weights form {}'.format(cfg.Vision_AI.checkpoint))
     model = model.to(cfg.base.device)
 
     return model
@@ -17,26 +17,26 @@ def generate_model(cfg):
 regression_loss = ['mean_square_error', 'mean_absolute_error', 'smooth_L1']
 
 def _build_model(cfg):
-    network = cfg.train.network
+    network = cfg.Vision_AI.network
     out_features = _select_out_features(
-        cfg.data.num_classes,
-        cfg.train.criterion
+        cfg.Vision_AI.num_classes,
+        cfg.Vision_AI.criterion
     )
 
     if 'vit' in network or 'swin' in network:
         model = timm.create_model(
             network,
-            img_size=cfg.data.input_size,
-            in_chans=cfg.data.in_channels,
+            img_size=cfg.Vision_AI.input_size,
+            in_chans=cfg.Vision_AI.in_channels,
             num_classes=out_features,
-            pretrained=cfg.train.pretrained,
+            pretrained=cfg.Vision_AI.pretrained,
         )
     else:
         model = timm.create_model(
             network,
-            in_chans=cfg.data.in_channels,
+            in_chans=cfg.Vision_AI.in_channels,
             num_classes=out_features,
-            pretrained=cfg.train.pretrained,
+            pretrained=cfg.Vision_AI.pretrained,
         )
 
     return model

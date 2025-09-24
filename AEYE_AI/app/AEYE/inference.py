@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from langchain.llms import OpenAI, HuggingFaceHub
+from langchain_community.llms import OpenAI, HuggingFaceHub
 from langchain.chains import RetrievalQA
 
 from AEYE.AI.models.octdl import generate_model
@@ -24,10 +24,10 @@ class AEYE_Inference():
         self.vision_model = octdl_model
         self.llm_model = llm_model
         
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=self.llm,
-            retriever=self.my_vectorstore.as_retriever()
-        )
+        # self.qa_chain = RetrievalQA.from_chain_type(
+        #     llm=self.llm_model,
+        #     retriever=self.my_vectorstore.as_retriever()
+        # )
     
     def _vision_inference(self, img):
         img = _image_preprocessing(img)
@@ -44,9 +44,9 @@ class AEYE_Inference():
     def inference(self, img):
         
         pred = self._vision_inference(img)
-        llm_result = self._llm_inference(pred)
+        # llm_result = self._llm_inference(pred)
         
-        return llm_result
+        return pred
         
 
 def _image_preprocessing(img):

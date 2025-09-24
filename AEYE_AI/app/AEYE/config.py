@@ -12,7 +12,7 @@ import types
 
 
 @dataclass
-class FlaskConfig:
+class FASTAPIConfig:
     HOST: str = "localhost"
     PORT: int = 8000
     API_PREFIX: str = "/fastapi"
@@ -21,10 +21,27 @@ class FlaskConfig:
     LOG_LEVEL : str = "info"
 
 @dataclass
+class Vision_AIConfig:
+    network: str = "vgg16"
+    pretrained: bool = True
+    checkpoint: str = None
+    input_size: int = 224
+    in_channels: int = 3
+    num_classes: int = 7
+
+@dataclass
+class HTTPConfig:
+    BATCH_THRESHOLD: int = 256
+    BATCH_TIMEOUT: float = 1.0
+    
+    
+@dataclass
 class Config:
     type: str = "develop"
-    FASTAPI: FlaskConfig = field(default_factory=FlaskConfig)
-    
+    FASTAPI: FASTAPIConfig = field(default_factory=FASTAPIConfig)
+    Vision_AI: Vision_AIConfig = field(default_factory=Vision_AIConfig)
+    HTTP: HTTPConfig = field(default_factory=HTTPConfig)
+
 
 def _get_config_file(config_path : str):
     
@@ -60,25 +77,45 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
             config_data = {
                 "type": getattr(config_data, "type", "develop"),
                 "FASTAPI": getattr(config_data, "FASTAPI", {}),
+                "Vision_AI": getattr(config_data, "Vision_AI", {}),
+                "HTTP": getattr(config_data, "HTTP", {}),
             }
             
     if not isinstance(config_data, dict):
         raise TypeError("config_data must be dict/module/Config")
     
     fastapi_raw = _get(config_data, "FASTAPI", {}) or {}
+    vision_ai_raw = _get(config_data, "Visoin_AI", {}) or {}
+    http_raw    = _get(config_data, "HTTP", {}) or {}
 
-    fastapi = FlaskConfig(
-        HOST=_get(fastapi_raw, "HOST", FlaskConfig.HOST),
-        PORT=int(_get(fastapi_raw, "PORT", FlaskConfig.PORT)),
-        API_PREFIX=_get(fastapi_raw, "API_PREFIX", FlaskConfig.API_PREFIX),
-        WORKERS=int(_get(fastapi_raw, "WORKERS", FlaskConfig.WORKERS)),
-        RELOAD=_get(fastapi_raw, "RELOAD", FlaskConfig.RELOAD),
-        LOG_LEVEL=_get(fastapi_raw, "LOG_LEVEL", FlaskConfig.LOG_LEVEL),
+    fastapi = FASTAPIConfig(
+        HOST=_get(fastapi_raw, "HOST", FASTAPIConfig.HOST),
+        PORT=int(_get(fastapi_raw, "PORT", FASTAPIConfig.PORT)),
+        API_PREFIX=_get(fastapi_raw, "API_PREFIX", FASTAPIConfig.API_PREFIX),
+        WORKERS=int(_get(fastapi_raw, "WORKERS", FASTAPIConfig.WORKERS)),
+        RELOAD=_get(fastapi_raw, "RELOAD", FASTAPIConfig.RELOAD),
+        LOG_LEVEL=_get(fastapi_raw, "LOG_LEVEL", FASTAPIConfig.LOG_LEVEL),
+    )
+    
+    vision_ai = Vision_AIConfig(
+        network=_get(vision_ai_raw, "network", Vision_AIConfig.network),
+        pretrained=bool(_get(vision_ai_raw, "pretrained", Vision_AIConfig.pretrained)),
+        checkpoint=_get(vision_ai_raw, "checkpoint", Vision_AIConfig.checkpoint),
+        input_size=int(_get(vision_ai_raw, "input_size", Vision_AIConfig.input_size)),
+        in_channels=int(_get(vision_ai_raw, "in_channels", Vision_AIConfig.in_channels)),
+        num_classes=int(_get(vision_ai_raw, "num_classes", Vision_AIConfig.num_classes)),
+    )
+    
+    http = HTTPConfig(
+        BATCH_THRESHOLD=int(_get(http_raw, "BATCH_THRESHOLD", HTTPConfig.BATCH_THRESHOLD)),
+        BATCH_TIMEOUT=float(_get(http_raw, "BATCH_TIMEOUT", HTTPConfig.BATCH_TIMEOUT)),
     )
     
     return Config(
         type=str(_get(config_data, "type", "develop")),
         FASTAPI=fastapi,
+        Vision_AI=vision_ai,
+        HTTP=http,
     )
     
 def _get(mapping: Dict[str, Any], key: str, default: Any = None) -> Any:

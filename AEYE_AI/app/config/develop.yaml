@@ -1,9 +1,21 @@
 type: develop
 
 FASTAPI:
-  HOST : deploy
+  HOST : localhost
   PORT : 8000
   API_PREFIX : /api/v1
   WORKERS : 1
   RELOAD : True
   LOG_LEVEL : info
+
+Vision_AI:
+  network: vgg16
+  pretrained: true
+  checkpoint: null
+  input_size: 224
+  in_channels: 3
+  num_classes: 7
+
+HTTP:
+  BATCH_THRESHOLD : 256
+  BATCH_TIMEOUT : 1.0 # 1sec
