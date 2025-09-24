@@ -29,9 +29,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-from routers.v1 import health, upload
+from routers.v1 import health, http_1_1, main, check_result
 app.include_router(health.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["health"])
-app.include_router(upload.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])
+app.include_router(http_1_1.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])
+app.include_router(check_result.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["result"])
+app.include_router(main.router, tags=["main"])
 
 async def start():
     config = Config()
