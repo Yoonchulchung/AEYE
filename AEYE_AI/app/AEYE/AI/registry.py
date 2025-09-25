@@ -1,7 +1,5 @@
 from typing import Callable, Dict
 
-from AEYE.logger import print_log
-
 
 class Registry:
     def __init__(self):

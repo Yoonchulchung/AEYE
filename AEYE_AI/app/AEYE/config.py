@@ -28,6 +28,7 @@ class Vision_AIConfig:
     input_size: int = 224
     in_channels: int = 3
     num_classes: int = 7
+    criterion : str = "cross_entropy"
 
 @dataclass
 class HTTPConfig:
@@ -104,6 +105,7 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
         input_size=int(_get(vision_ai_raw, "input_size", Vision_AIConfig.input_size)),
         in_channels=int(_get(vision_ai_raw, "in_channels", Vision_AIConfig.in_channels)),
         num_classes=int(_get(vision_ai_raw, "num_classes", Vision_AIConfig.num_classes)),
+        criterion=_get(vision_ai_raw, "criterion", Vision_AIConfig.criterion),
     )
     
     http = HTTPConfig(

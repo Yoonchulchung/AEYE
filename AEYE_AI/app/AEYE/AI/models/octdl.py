@@ -10,7 +10,7 @@ def generate_model(cfg):
         weights = torch.load(cfg.Vision_AI.checkpoint)
         model.load_state_dict(weights, strict=True)
         print('Load weights form {}'.format(cfg.Vision_AI.checkpoint))
-    model = model.to(cfg.base.device)
+    model = model.to('cuda')
 
     return model
 

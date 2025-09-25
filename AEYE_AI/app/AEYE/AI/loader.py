@@ -28,7 +28,7 @@ class GPUModelLoader(ModelLoaderInterface):
     
         self.vlm_register = vlm_register
         
-        self.llm_list = [""]
+        self.llm_list = ["gpt-4o-mini"]
         self.vision_list = ["octdl", ]
         
         self.logger = logger
@@ -76,9 +76,6 @@ class GPUModelLoader(ModelLoaderInterface):
         if not (in_vision or in_vlm or in_llm):
             raise ValueError(
                 f"Unknown model_name: '{model_name}'."
-                f"Available vision: {list(self.vision_list)}"
-                f"available vlm: {list(self.vlm_register.list())}"
-                f"available llm: {list(self.llm_list)}"
             )
 
         assert gpu_id in list(range(torch.cuda.device_count())), \

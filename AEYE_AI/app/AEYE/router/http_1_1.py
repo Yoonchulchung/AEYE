@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from fastapi import File, HTTPException, Request, UploadFile
 from PIL import Image
 
-from AEYE.logger import print_log
+from AEYE.logger import AEYE_log
 
 
 class TensorParser(Protocol):
@@ -35,7 +35,7 @@ class Response_HTTP_1_1(TensorParser):
             return _img_bytes_to_tensor(body)
         
         except Exception as e:
-            print_log('[Error] Failed to parse data from body:', str(e))
+            AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
 
     
@@ -51,7 +51,7 @@ class Response_HTTP_1_1(TensorParser):
             
             return _img_bytes_to_tensor(bytes)
         except Exception as e:
-            print_log('[Error] Failed to parse data from body:', str(e))
+            AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
         
     
@@ -71,7 +71,7 @@ class Response_HTTP_1_1(TensorParser):
             
             return _image_bytes_to_pil(bytes)
         except Exception as e:
-            print_log('[Error] Failed to parse data from body:', str(e))
+            AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
         
     
@@ -85,7 +85,7 @@ class Response_HTTP_1_1(TensorParser):
             return _image_bytes_to_pil(body)
         
         except Exception as e:
-            print_log('[Error] Failed to parse data from body:', str(e))
+            AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
     
     
@@ -101,7 +101,7 @@ class Response_HTTP_1_1(TensorParser):
         handler = handlers.get(ct)
         
         if handler is None:
-            print_log('[Warning] Invalid Content-Type:', ct)
+            AEYE_log('[Warning] Invalid Content-Type:', ct)
             allow = ', '.join(sorted(handlers.keys()))
             raise HTTPException(status_code=415, detail=f"Only {set(allow)} is supported.")
 
@@ -122,7 +122,7 @@ class Response_HTTP_1_1(TensorParser):
         handler = handlers.get(ct)
         
         if handler is None:
-            print_log('[Warning] Invalid Content-Type:', ct)
+            AEYE_log('[Warning] Invalid Content-Type:', ct)
             allow = ', '.join(sorted(handlers.keys()))
             raise HTTPException(status_code=415, detail=f"Only {set(allow)} is supported.")
 

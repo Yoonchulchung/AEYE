@@ -5,7 +5,10 @@ from langchain.chains import RetrievalQA
 
 from AEYE.AI.models.octdl import generate_model
 
-class AEYE_Inference():
+
+import torch.nn as nn
+
+class AEYE_Inference(nn.Module):
     
     _instance = None
     def __new__(cls, *args, **kwargs):
@@ -21,6 +24,7 @@ class AEYE_Inference():
     
     def __init__(self, octdl_model, llm_model):
         
+        super().__init__()
         self.vision_model = octdl_model
         self.llm_model = llm_model
         
@@ -30,8 +34,8 @@ class AEYE_Inference():
         # )
     
     def _vision_inference(self, img):
-        img = _image_preprocessing(img)
-
+        #img = _image_preprocessing(img)
+        
         pred = self.vision_model(img)
         
         return pred
@@ -48,6 +52,8 @@ class AEYE_Inference():
         
         return pred
         
+    def forward(self, img):
+        return img, self.inference(img)
 
 def _image_preprocessing(img):
     img = cv2.resize(img,(224,224))

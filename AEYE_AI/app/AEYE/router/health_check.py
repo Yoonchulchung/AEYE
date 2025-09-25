@@ -5,7 +5,7 @@ import psutil
 import torch
 from fastapi import Request
 
-from AEYE.logger import print_log
+from AEYE.logger import AEYE_log
 
 
 class HealthCheck(Protocol):
@@ -46,7 +46,7 @@ class Rsponse_Health_Check(HealthCheck):
             f"------------------------------------------",
         ]
         
-        print_log(*message)
+        AEYE_log(*message)
     
     
     async def _get_server_status(self, ) -> dict[str, Any]:
