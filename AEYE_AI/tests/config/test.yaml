@@ -1,0 +1,14 @@
+
+SERVER :
+  content_type : application/octet-stream
+  img_path : ../data/samples/image_000043.png
+  img_size : 640
+  batch : 30
+  server_url : 'http://127.0.0.1:8000/api/v1/upload/pil'
+  post_mode : 'rand'
+  retry_total : 2
+  backoff_factor : 0.2
+  raise_on_status : False
+  status_forcelist : (502, 503, 504)
+  pool_connections : 100
+  pool_maxsize : 100
