@@ -22,6 +22,6 @@ class Registry:
         return list(self._map.keys())
     
 vlm_register = Registry()
-vision_register = Registry()
 llm_register = Registry()
+vision_register = Registry()
 

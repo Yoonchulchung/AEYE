@@ -1,14 +1,15 @@
 
-from dataclasses import dataclass, field, is_dataclass, asdict
-import os
-import yaml
 import importlib
+import os
+import types
+from dataclasses import asdict, dataclass, field, is_dataclass
 from enum import Enum
 from pathlib import Path
-import torch
-import numpy as np
 from typing import Any, Dict, Union
-import types
+
+import numpy as np
+import torch
+import yaml
 
 
 @dataclass

@@ -1,9 +1,20 @@
 
-import torch
 import timm
+import torch
+
+from AEYE.AI.registry import vision_register
 
 
-def generate_model(cfg):
+@vision_register.register("OCTDL")
+class OCTDL:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.model = _generate_model(self.cfg)
+        
+    def get_model(self):
+        return self.model
+        
+def _generate_model(cfg):
     model = _build_model(cfg)
 
     if cfg.Vision_AI.checkpoint:

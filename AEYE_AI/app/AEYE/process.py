@@ -1,11 +1,11 @@
 import asyncio
-import torch
-
-from typing import Dict, Any
-from fastapi import HTTPException
 import time
+from typing import Any, Dict
 
+import torch
+from fastapi import HTTPException
 from PIL import Image
+
 
 class ProcessGPU:
     
@@ -150,7 +150,11 @@ class ProcessGPU:
         start_time = time.time()
         loop = asyncio.get_event_loop()
         
+        from AEYE.AI.dataset import pil_to_tensor
+        
+        img = pil_to_tensor(batch)
+        img = img.to('cuda')
         async with self._model_lock:
-            img, result = await loop.run_in_executor(None, self.inference, batch)
+            result = await loop.run_in_executor(None, self.inference, img)
         async with self._result_lock:
-            await self.result_queue.put((img, result))
+            await self.result_queue.put((batch, result))

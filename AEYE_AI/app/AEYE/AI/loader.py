@@ -1,7 +1,6 @@
 import gc
-from typing import Any, Callable
-from langchain_community.llms import OpenAI, HuggingFaceHub
-from AEYE.AI.models.octdl import generate_model
+from typing import Callable
+
 import torch
 
 
@@ -19,6 +18,7 @@ class GPUModelLoader(ModelLoaderInterface):
                  free_mem_threshold : float = 2.0, # Bytes
                  vision_register : Callable = None,
                  vlm_register : Callable = None,
+                 llm_register : Callable = None,
                  logger : Callable = None,
                  ):
         super().__init__()
@@ -28,8 +28,8 @@ class GPUModelLoader(ModelLoaderInterface):
     
         self.vlm_register = vlm_register
         
-        self.llm_list = ["gpt-4o-mini"]
-        self.vision_list = ["octdl", ]
+        self.llm_list = llm_register
+        self.vision_list = vision_register
         
         self.logger = logger
         if not torch.cuda.is_available():
@@ -53,14 +53,17 @@ class GPUModelLoader(ModelLoaderInterface):
         
     def _load_vision(self, model_name, gpu_id):
         
-        model = generate_model(self.cfg)
+        model_cls = self.vision_list.get(model_name)
+        model_inst = model_cls(self.cfg)
+        model = model_inst.get_model()
         return model.to('cuda').eval()
         
     def _load_llm(self, model_name : str, gpu_id):
         
         # We are going to use langchain
-        if model_name.lower() == "gpt-4o-mini":
-            return OpenAI(model="gpt-4o-mini")  
+        model_cls = self.llm_list.get(model_name)
+        model_inst = model_cls()
+        return model_inst.get_model()
 
     
     def get_model_list(self):
@@ -69,13 +72,15 @@ class GPUModelLoader(ModelLoaderInterface):
     async def get_model(self, model_name, gpu_id):
         
         self.logger(f"{model_name} is loading...")
-        in_vision = model_name in self.vision_list
+        in_vision = model_name in self.vision_list.list()
         in_vlm    = model_name in self.vlm_register.list()
-        in_llm    = model_name in self.llm_list
+        in_llm    = model_name in self.llm_list.list()
         
         if not (in_vision or in_vlm or in_llm):
             raise ValueError(
-                f"Unknown model_name: '{model_name}'."
+                f"Unknown model_name: '{model_name}'.",
+                f"Available model in vision : {self.vision_list.list()}",
+                f"Available model in llm : {self.llm_list.list()}",
             )
 
         assert gpu_id in list(range(torch.cuda.device_count())), \
