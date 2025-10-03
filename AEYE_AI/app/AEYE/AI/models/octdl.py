@@ -17,6 +17,7 @@ class OCTDL:
 def _generate_model(cfg):
     model = _build_model(cfg)
 
+    print(cfg.Vision_AI.checkpoint)
     if cfg.Vision_AI.checkpoint:
         weights = torch.load(cfg.Vision_AI.checkpoint)
         model.load_state_dict(weights, strict=True)

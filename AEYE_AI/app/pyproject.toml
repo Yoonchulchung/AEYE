@@ -10,3 +10,30 @@ ensure_newline_before_comments = true
 known_first_party = ["SomniAI"]  
 known_third_party = ["fastapi", "torch", "torchvision", "PIL", "numpy", "yaml", "rich", "psutil"]
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+[project]
+name = "aeye"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Yoonchul Chung"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi (>=0.118.0,<0.119.0)",
+    "hypercorn[standard] (>=0.17.3,<0.18.0)",
+    "timm (>=1.0.20,<2.0.0)",
+    "psutil (>=7.1.0,<8.0.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "chatollama (>=0.2.13,<0.3.0)",
+    "langchain-core (>=0.3.77,<0.4.0)",
+    "langchain-community (>=0.3.7,<0.4.0)"
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
     yield
     
-    shutdown()
+    await shutdown()
 
 app = FastAPI(lifespan=lifespan)
 

@@ -10,8 +10,8 @@ FASTAPI:
 
 Vision_AI:
   network: vgg16
-  pretrained: true
-  checkpoint: null
+  pretrained: True
+  checkpoint: ./best_validation_weights.pt
   input_size: 224
   in_channels: 3
   num_classes: 7

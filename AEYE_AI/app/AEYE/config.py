@@ -87,7 +87,7 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
         raise TypeError("config_data must be dict/module/Config")
     
     fastapi_raw = _get(config_data, "FASTAPI", {}) or {}
-    vision_ai_raw = _get(config_data, "Visoin_AI", {}) or {}
+    vision_ai_raw = _get(config_data, "Vision_AI", {}) or {}
     http_raw    = _get(config_data, "HTTP", {}) or {}
 
     fastapi = FASTAPIConfig(

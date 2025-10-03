@@ -19,8 +19,11 @@ async def result(request: Request, ):
         return _nothing()
     
     data_url = pil_to_data_url(img, fmt="PNG")
+    
+    pred = message["pred"]
+    llm_result = message["llm_result"]
 
-    page = _show_image(data_url=data_url, message_html=message)
+    page = _show_image(data_url, pred, llm_result)
     return HTMLResponse(page)
     
 def _nothing():
@@ -38,7 +41,7 @@ def _nothing():
             )
     
 
-def _show_image(data_url: str, message_html: str) -> str:
+def _show_image(data_url: str, pred : str, llm_result: str) -> str:
     html_page = f"""
     <html>
       <head>
@@ -71,7 +74,7 @@ def _show_image(data_url: str, message_html: str) -> str:
             font-size: 16px;
             color: #222;
             white-space: pre-wrap;
-            text-align: center;
+            text-align: left;
           }}
           .toolbar {{
             display: flex;
@@ -96,9 +99,9 @@ def _show_image(data_url: str, message_html: str) -> str:
           <div class="toolbar">
             <button onclick="location.reload()">새로고침</button>
           </div>
-          <div class="message"><strong>결과 메시지:</strong><br>{message_html}</div>
           <img src="{data_url}" alt="inference image" />
-          <div class="message"><strong>추론 결과:</strong><br>{message_html}</div>
+          <div class="message"><strong>추론 결과:</strong><br>{pred}</div>
+          <div class="message"><strong>진단 방법:</strong><br>{llm_result}</div>
         </div>
       </body>
     </html>
