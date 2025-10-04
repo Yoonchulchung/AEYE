@@ -16,7 +16,14 @@ Vision_AI:
   in_channels: 3
   num_classes: 7
   criterion: cross_entropy
-
+  labels:
+    - "Age-related Macular Degeneration (AMD)"
+    - "Diabetic Macular Edema (DME)"
+    - "Epiretinal Membrane (ERM)"
+    - "Normal (NO)"
+    - "Retinal Artery Occlusion (RAO)"
+    - "Retinal Vein Occlusion (RVO)"
+    - "Vitreomacular Interface Disease (VID)"
 
 HTTP:
   BATCH_THRESHOLD : 256

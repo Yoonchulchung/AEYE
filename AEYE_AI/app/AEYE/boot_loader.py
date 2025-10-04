@@ -20,7 +20,7 @@ async def bootstrap():
     llm_model = await model_loader.get_model("Qwen2", 0)
     vision_model = await model_loader.get_model('OCTDL', 0)
 
-    aeye_inference = AEYE_Inference(vision_model, llm_model)
+    aeye_inference = AEYE_Inference(vision_model, llm_model, cfg)
     
     gpu = ProcessGPU(cfg.Vision_AI, cfg.HTTP, aeye_inference, AEYE_log)
     

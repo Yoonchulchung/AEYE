@@ -30,6 +30,7 @@ class Vision_AIConfig:
     in_channels: int = 3
     num_classes: int = 7
     criterion : str = "cross_entropy"
+    labels : list = None
 
 @dataclass
 class HTTPConfig:
@@ -107,6 +108,7 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
         in_channels=int(_get(vision_ai_raw, "in_channels", Vision_AIConfig.in_channels)),
         num_classes=int(_get(vision_ai_raw, "num_classes", Vision_AIConfig.num_classes)),
         criterion=_get(vision_ai_raw, "criterion", Vision_AIConfig.criterion),
+        labels=list(_get(vision_ai_raw, "labels", Vision_AIConfig.labels)),
     )
     
     http = HTTPConfig(

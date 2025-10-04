@@ -17,21 +17,15 @@ class AEYE_Inference(nn.Module):
             raise RuntimeError("AEYE_Inference is not initialized yet")
         return cls._instance
     
-    def __init__(self, octdl_model, llm_model):
+    def __init__(self, octdl_model, llm_model, cfg):
         
         super().__init__()
+        self.cfg = cfg
+        
         self.vision_model = octdl_model
         self.llm_model = llm_model
         
-        self.labels = [
-                "Age-related Macular Degeneration (AMD)",
-                "Diabetic Macular Edema (DME)",
-                "Epiretinal Membrane (ERM)",
-                "Normal (NO)",
-                "Retinal Artery Occlusion (RAO)",
-                "Retinal Vein Occlusion (RVO)",
-                "Vitreomacular Interface Disease (VID)",
-            ]
+        self.labels = self.cfg.Vision_AI.labels
         
         self.prompt = ChatPromptTemplate.from_messages([
                 ("system", "너는 한국인 의사야. 한국어로 질병 치료 방법을 설명해야 해. 규칙 외에는 설명하지 마.\
