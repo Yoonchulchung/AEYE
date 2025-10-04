@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 
-parser = argparse.ArgumentParser(description="AEYE Flask Server")
+parser = argparse.ArgumentParser(description="AEYE FastAPI Server")
 parser.add_argument('config', type=str, help="Flask config path")
 args = parser.parse_args()
 
@@ -29,12 +29,32 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-from routers.v1 import check_result, health, http_1_1, main
+from api.v1 import check_result, health, upload, main
 
 app.include_router(health.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["health"])
-app.include_router(http_1_1.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])
+app.include_router(upload.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])
 app.include_router(check_result.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["result"])
 app.include_router(main.router, tags=["main"])
+
+from user.interface.controllers.user_controller import router as user_routers
+
+app.include_router(user_routers)
+
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+):
+    return JSONResponse(
+        status_code=400,
+        content=exc.errors()
+    )
+
 
 async def start():
     config = Config()
