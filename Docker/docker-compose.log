@@ -1,0 +1,62 @@
+time="2025-10-04T20:34:13+09:00" level=warning msg="/home/yoonchul/Documents/personal_work/Hanium_2024/Docker/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-04T20:34:13+09:00" level=warning msg="Found orphan containers ([opticnet_container somniai_pose lab_apache lab_segmentation lab_classification lab_human3d lab_detection_old]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container aeye_web_front  Creating
+ Container aeye_web_front  Created
+Attaching to aeye_web_front
+aeye_web_front  | 
+aeye_web_front  | > aeye@0.1.0 build
+aeye_web_front  | > next build
+aeye_web_front  | 
+aeye_web_front  | Attention: Next.js now collects completely anonymous telemetry regarding usage.
+aeye_web_front  | This information is used to shape Next.js' roadmap and prioritize features.
+aeye_web_front  | You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+aeye_web_front  | https://nextjs.org/telemetry
+aeye_web_front  | 
+aeye_web_front  |   ▲ Next.js 14.2.5
+aeye_web_front  | 
+aeye_web_front  |    Creating an optimized production build ...
+aeye_web_front  | Browserslist: caniuse-lite is outdated. Please run:
+aeye_web_front  |   npx update-browserslist-db@latest
+aeye_web_front  |   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+aeye_web_front  |  ✓ Compiled successfully
+aeye_web_front  |    Linting and checking validity of types ...
+aeye_web_front  |    Collecting page data ...
+aeye_web_front  |    Generating static pages (0/8) ...
+aeye_web_front  |    Generating static pages (2/8) 
+aeye_web_front  |    Generating static pages (4/8) 
+aeye_web_front  |    Generating static pages (6/8) 
+aeye_web_front  |  ✓ Generating static pages (8/8)
+aeye_web_front  |    Finalizing page optimization ...
+aeye_web_front  |    Collecting build traces ...
+aeye_web_front  | 
+aeye_web_front  | Route (app)                                  Size     First Load JS
+aeye_web_front  | ┌ ƒ /                                        137 B          87.3 kB
+aeye_web_front  | ├ ○ /_not-found                              871 B            88 kB
+aeye_web_front  | ├ ○ /api/patients                            0 B                0 B
+aeye_web_front  | ├ ƒ /api/patients/[id]                       0 B                0 B
+aeye_web_front  | ├ ƒ /api/patients/[id]/checkups/[checkupId]  0 B                0 B
+aeye_web_front  | ├ ƒ /patients                                1.74 kB         101 kB
+aeye_web_front  | ├ ● /patients/[id]                           1.6 kB          107 kB
+aeye_web_front  | ├ ƒ /patients/[id]/checkups/[checkupId]      45.7 kB         144 kB
+aeye_web_front  | └ ○ /signin                                  3.16 kB         110 kB
+aeye_web_front  | + First Load JS shared by all                87.1 kB
+aeye_web_front  |   ├ chunks/23-2990a51bfce89122.js            31.5 kB
+aeye_web_front  |   ├ chunks/fd9d1056-c176ba62bfa905c4.js      53.6 kB
+aeye_web_front  |   └ other shared chunks (total)              1.96 kB
+aeye_web_front  | 
+aeye_web_front  | 
+aeye_web_front  | ƒ Middleware                                 30.4 kB
+aeye_web_front  | 
+aeye_web_front  | ○  (Static)   prerendered as static content
+aeye_web_front  | ●  (SSG)      prerendered as static HTML (uses getStaticProps)
+aeye_web_front  | ƒ  (Dynamic)  server-rendered on demand
+aeye_web_front  | 
+aeye_web_front  | 
+aeye_web_front  | > aeye@0.1.0 start
+aeye_web_front  | > next start
+aeye_web_front  | 
+aeye_web_front  |   ▲ Next.js 14.2.5
+aeye_web_front  |   - Local:        http://localhost:3000
+aeye_web_front  | 
+aeye_web_front  |  ✓ Starting...
+aeye_web_front  |  ✓ Ready in 187ms
