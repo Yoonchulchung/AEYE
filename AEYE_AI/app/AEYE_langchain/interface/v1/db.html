@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>PostgreSQL 상태 대시보드</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0b1020; --card:#121933; --muted:#9fb0d1; --text:#e8edff; --accent:#6ea8fe; --ok:#58d68d; --warn:#f5b041; --err:#ec7063; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      background: radial-gradient(1200px 800px at 20% -10%, #1b2550 0%, #0b1020 50%, #0b1020 100%);
+      color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans KR", Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    h1 { margin: 0 0 16px; font-size: 22px; font-weight: 700; letter-spacing: 0.3px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+    }
+    .card h2 { margin: 0 0 12px; font-size: 16px; color: var(--muted); font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); }
+    .ok { color: var(--ok); } .warn { color: var(--warn);} .err{ color: var(--err); }
+    .muted { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 13px; }
+    .header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
+    .header .right { display:flex; gap:8px; align-items:center; }
+    .btn {
+      appearance: none; border: 1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer;
+    }
+    .btn:hover { border-color: rgba(255,255,255,0.28); }
+    .error {
+      border: 1px solid rgba(236, 112, 99, 0.5);
+      background: rgba(236, 112, 99, 0.1);
+      color: var(--err);
+      padding: 12px 14px; border-radius: 12px; margin-bottom: 16px;
+    }
+    .section { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>PostgreSQL 상태 대시보드</h1>
+    <div class="right">
+      <a class="btn" href="/db.json" target="_blank">/db.json 보기</a>
+      <button class="btn" onclick="location.reload()">새로고침</button>
+    </div>
+  </div>
+
+  {% if error %}
+    <div class="error mono">
+      ⚠️ {{ error }}
+      <div class="muted">DB 연결 정보는 <span class="mono">here()</span>에서 제공됩니다.</div>
+    </div>
+  {% endif %}
+
+  {% if status and not error %}
+    <div class="grid">
+      <div class="card">
+        <h2>세션 정보</h2>
+        <div class="section">
+          <div>서버 버전: <span class="pill mono">{{ status.server_version }}</span></div>
+          <div>접속 사용자: <span class="pill mono">{{ status.session.user }}</span></div>
+          <div>현재 DB: <span class="pill mono">{{ status.session.database }}</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>데이터베이스</h2>
+        <table>
+          <thead><tr><th>Name</th><th>Size</th></tr></thead>
+          <tbody>
+          {% for db in status.databases %}
+            <tr>
+              <td class="mono">{{ db.name }}</td>
+              <td class="mono">{{ db.size }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>역할(roles)</h2>
+        <table>
+          <thead><tr><th>Role</th><th>Flags</th></tr></thead>
+          <tbody>
+          {% for r in status.roles %}
+            <tr>
+              <td class="mono">{{ r.rolname }}</td>
+              <td>
+                {% if r.rolsuper %}<span class="pill ok">SUPERUSER</span> {% endif %}
+                {% if r.rolcreatedb %}<span class="pill">CREATEDB</span> {% endif %}
+                {% if r.rolcanlogin %}<span class="pill">LOGIN</span> {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>확장(extensions)</h2>
+        <table>
+          <thead><tr><th>Name</th><th>Version</th><th>Schema</th></tr></thead>
+          <tbody>
+          {% for ext in status.extensions %}
+            <tr>
+              <td class="mono">{{ ext.extname }}</td>
+              <td class="mono">{{ ext.extversion }}</td>
+              <td class="mono">{{ ext.schema }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>public 테이블</h2>
+        {% if status.tables|length == 0 %}
+          <div class="muted">테이블이 없습니다.</div>
+        {% else %}
+          <table>
+            <thead><tr><th>Table</th></tr></thead>
+            <tbody>
+            {% for t in status.tables %}
+              <tr><td class="mono">{{ t }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <h2>활성 세션 (최근 20개)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>pid</th><th>user</th><th>db</th><th>state</th>
+              <th>client</th><th>backend_start</th><th>query_start</th><th>query</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for a in status.activity %}
+            <tr>
+              <td class="mono">{{ a.pid }}</td>
+              <td class="mono">{{ a.usename }}</td>
+              <td class="mono">{{ a.datname }}</td>
+              <td>{{ a.state or '-' }}</td>
+              <td class="mono">{{ a.client_addr or '-' }}</td>
+              <td class="mono">{{ a.backend_start }}</td>
+              <td class="mono">{{ a.query_start or '-' }}</td>
+              <td class="mono">{{ a.query }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  {% endif %}
+</body>
+</html>

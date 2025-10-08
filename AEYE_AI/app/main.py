@@ -36,9 +36,10 @@ app.include_router(upload.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upl
 app.include_router(check_result.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["result"])
 app.include_router(main.router, tags=["main"])
 
-from AEYE_langchain.interface.v1 import chat
+from AEYE_langchain.interface.v1 import chat, db
 
 app.include_router(chat.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["chat"])
+app.include_router(db.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["db"])
 # from user.interface.controllers.user_controller import router as user_routers
 
 # app.include_router(user_routers)
