@@ -5,7 +5,7 @@ import psutil
 import torch
 from fastapi import Request
 
-from AEYE.logger import AEYE_log
+from AEYE.application.logger import AEYE_log
 
 
 class HealthCheck(Protocol):

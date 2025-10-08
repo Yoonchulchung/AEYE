@@ -6,7 +6,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Type
 
-from AEYE.AI.registry import llm_register
+from AEYE.application.AI.registry import llm_register
 
 try:
     from langchain_ollama import ChatOllama

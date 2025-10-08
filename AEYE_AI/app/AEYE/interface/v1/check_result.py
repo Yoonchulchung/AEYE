@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from PIL import Image
 
-from AEYE.process import ProcessGPU
+from AEYE.application.process import ProcessGPU
 
 router = APIRouter()
 

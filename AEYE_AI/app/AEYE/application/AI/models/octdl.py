@@ -2,7 +2,7 @@
 import timm
 import torch
 
-from AEYE.AI.registry import vision_register
+from AEYE.application.AI.registry import vision_register
 
 
 @vision_register.register("OCTDL")

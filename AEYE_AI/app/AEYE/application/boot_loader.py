@@ -1,10 +1,10 @@
-from AEYE.AI.inference import AEYE_Inference
-from AEYE.AI.loader import GPUModelLoader
-from AEYE.AI.models.llm import shutdown_llm
-from AEYE.AI.registry import llm_register, vision_register, vlm_register
-from AEYE.logger import AEYE_log
-from AEYE.process import ProcessGPU
-from AEYE.registry import get_cfg
+from AEYE.application.AI.inference import AEYE_Inference
+from AEYE.application.AI.loader import GPUModelLoader
+from AEYE.application.AI.models.llm import shutdown_llm
+from AEYE.application.AI.registry import llm_register, vision_register, vlm_register
+from AEYE.application.logger import AEYE_log
+from AEYE.application.process import ProcessGPU
+from AEYE.application.registry import get_cfg
 
 llm_model = None
 vision_model = None

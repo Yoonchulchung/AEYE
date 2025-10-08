@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 
-from AEYE.router.health_check import Rsponse_Health_Check
+from AEYE.application.router.health_check import Rsponse_Health_Check
 
 
 def get_healtcheck():

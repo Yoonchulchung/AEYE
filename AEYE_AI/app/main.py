@@ -12,8 +12,8 @@ args = parser.parse_args()
 from contextlib import asynccontextmanager
 
 from AEYE import registry as registry
-from AEYE.boot_loader import bootstrap, shutdown
-from AEYE.config import load_config
+from AEYE.application.boot_loader import bootstrap, shutdown
+from AEYE.application.config import load_config
 
 AEYE_cfg = load_config(args.config)
 registry.set_cfg(AEYE_cfg)
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-from api.v1 import check_result, health, upload, main
+from AEYE.interface.v1 import check_result, health, main, upload
 
 app.include_router(health.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["health"])
 app.include_router(upload.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])

@@ -2,9 +2,9 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 
-from AEYE.process import ProcessGPU
-from AEYE.registry import get_cfg
-from AEYE.router.http_1_1 import Response_HTTP_1_1
+from AEYE.application.process import ProcessGPU
+from AEYE.application.registry import get_cfg
+from AEYE.application.router.http_1_1 import Response_HTTP_1_1
 
 router = APIRouter()
 AEYE_cfg = get_cfg()

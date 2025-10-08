@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from fastapi import File, HTTPException, Request, UploadFile
 from PIL import Image
 
-from AEYE.logger import AEYE_log
+from AEYE.application.logger import AEYE_log
 
 
 class TensorParser(Protocol):
