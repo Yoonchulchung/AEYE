@@ -10,7 +10,7 @@ class AI_Diagnosis(models.Model):
     updated_at = models.DateTimeField(auto_now_add=True)
     
     
-class Checkups(models.Model):
+class Checkup(models.Model):
     
     class Status(models.TextChoices):
         MODERATE_RISK = 'MR', 'MODERATE_RISK'
@@ -41,7 +41,7 @@ class Checkups(models.Model):
 
 class OCT_Image(models.Model):
     checkup_id = models.ForeignKey(
-        Checkups,
+        Checkup,
         on_delete=models.SET_NULL,
         related_name='oct_image',
         null=True

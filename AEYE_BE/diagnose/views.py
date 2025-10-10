@@ -1,3 +1,7 @@
 from django.shortcuts import render
+from .models import Checkup, AI_Diagnosis, OCT_Image
+from django.http import JsonResponse
 
-# Create your views here.
+
+def ai_diagnose(request, id):
+    return JsonResponse({"message" : "HI"})
