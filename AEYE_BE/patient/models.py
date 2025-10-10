@@ -9,8 +9,8 @@ class Patient(models.Model):
         
     name = models.CharField(max_length=30)
     DOB = models.DateField()
-    visit_nums = models.IntegerField()
-    recent_visit_date = models.DateField()
+    visit_nums = models.IntegerField(default=1)
+    recent_visit_date = models.DateField(auto_now_add=True)
     severity_percentage = models.IntegerField()
     status = models.CharField(
         max_length=2, 
