@@ -1,11 +1,13 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
 from django.db import transaction
+from rest_framework import status, viewsets
+from rest_framework.response import Response
+
 from .models import Patient
-from .serializers import PatientSerializer, PatientSaveSerializer
+from .serializers import PatientSaveSerializer, PatientSerializer
+
 
 class PatientViewSet(viewsets.ModelViewSet):
-    serializer_class = PatientSaveSerializer
+    serializer_class = PatientSerializer
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
