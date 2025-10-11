@@ -1,8 +1,10 @@
-from django.urls import path
-from . import views
+from rest_framework.routers import DefaultRouter
+
+from .views import DiagnoseViewSet
 
 app_name = 'dianose'
 
-urlpatterns = [
-    path("<int:id>/", views.ai_diagnose, name="ai_diagnose"),
-]
+router = DefaultRouter()
+router.register(r'', DiagnoseViewSet, basename='diagnose')
+
+urlpatterns = router.urls
