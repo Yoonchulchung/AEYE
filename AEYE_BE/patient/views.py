@@ -1,65 +1,44 @@
-from django.shortcuts import render
-from .models import Patient, Patient_Image
-from django.http import JsonResponse
-import json
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from django.db import transaction
+from .models import Patient
+from .serializers import PatientSerializer, PatientSaveSerializer
 
+class PatientViewSet(viewsets.ModelViewSet):
+    serializer_class = PatientSaveSerializer
 
-
-def get_all_patient(request):
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return PatientSaveSerializer
+        return PatientSerializer
     
-    if request.method == 'GET':
-        patients = Patient.objects.all().values()
-        data = list(patients)
+    def get_queryset(self):
+        return (Patient.objects
+                .filter(db_status=True)                
+                .order_by('-recent_visit_date', '-id'))
         
-        return JsonResponse({"patients": data})
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
 
+        serializer = PatientSaveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-@csrf_exempt
-def create_patient(request):
+        name = serializer.validated_data.get("name")
+        dob = serializer.validated_data.get("DOB")
 
-    if request.method == "POST":
-        client_data=_parse_request_data(request)
-        
-        patient_name=client_data.get('name')
-        patient_DOB=client_data.get('DOB')
-        patient_sp=client_data.get('severity_percentage')
-        patient_status=client_data.get('status')
-        
         patient, created = Patient.objects.get_or_create(
-            name=patient_name,
-            DOB=patient_DOB,
-            defaults={
-                "severity_percentage": patient_sp,
-                "status": patient_status,
-            }
+            name=name,
+            DOB=dob,
         )
 
         if created:
             message = "Succeeded to save patient."
         else:
             message = "Patient is already registered."
-
-        return JsonResponse({"message": message})
-                    
-    return JsonResponse({"message": "Invalid request method."}, status=405)
-
-
-def _parse_request_data(request):
-    ct = (request.META.get("CONTENT_TYPE") or "").lower()
-
-    if "application/json" in ct:
-        try:
-            body = request.body.decode(request.encoding or "utf-8")
-            return json.loads(body)
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON body")
-
-    if "multipart/form-data" in ct or "application/x-www-form-urlencoded" in ct:
-        return request.POST.dict()
-
-    try:
-        body = request.body.decode(request.encoding or "utf-8")
-        return json.loads(body)
-    except Exception:
-        return request.POST.dict()
+            
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            {'message' : message},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            headers=headers
+        )

@@ -1,7 +1,5 @@
 from django.contrib import admin
-from .models import Patient, Patient_Image
-
-admin.site.register(Patient_Image)
+from .models import Patient
 
 @admin.register(Patient)
 class PatientAdmin(admin.ModelAdmin):

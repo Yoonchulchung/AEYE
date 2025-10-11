@@ -11,24 +11,14 @@ class Patient(models.Model):
     DOB = models.DateField()
     visit_nums = models.IntegerField(default=1)
     recent_visit_date = models.DateField(auto_now_add=True)
-    severity_percentage = models.IntegerField()
+    severity_percentage = models.IntegerField(null=True, blank=True)
     status = models.CharField(
         max_length=2, 
         choices=Status.choices,
         default=Status.LOW_RISK,
+        null=True,
+        blank=True
     )
-    db_status = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
-    
-    
-class Patient_Image(models.Model):
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name='images'
-    )
-    image = models.ImageField(upload_to='patient_images/')
     db_status = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
