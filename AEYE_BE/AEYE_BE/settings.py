@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'patient.apps.PatientConfig',
     'diagnose.apps.DiagnoseConfig',
     'ai.apps.AiConfig',
+    'user.apps.UserConfig',
     'rest_framework',
 ]
 
