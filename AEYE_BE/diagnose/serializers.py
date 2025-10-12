@@ -1,7 +1,13 @@
+import os
+
+from django.db import transaction
+from django.utils import timezone
+from django.utils.text import slugify
 from rest_framework import serializers
 
 from ai.models import AIVersion
 from ai.serializers import AIVersionSerializer
+from patient.models import Patient
 
 from .models import Checkup, DiagnosisInfo, OCTImage
 
@@ -10,16 +16,16 @@ class OCTImageSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = OCTImage
-        field = ['image']
+        fields = ['image']
 
 class DiagnosisInfoSerializer(serializers.ModelSerializer):
     ai_version = AIVersionSerializer(required=False)
 
     class Meta: 
         model=DiagnosisInfo
-        field = '__all__'
+        fields = '__all__'
 
-
+    @transaction.atomic
     def create(self, validated_data):
         ai_data = validated_data.pop("ai_version", None)
         diagnosis = super().create(validated_data)
@@ -47,13 +53,39 @@ class DiagnosisInfoSerializer(serializers.ModelSerializer):
                 AIVersion.objects.create(diagnosis=diagnosis, **ai_data)
         return diagnosis
     
+    
 class CheckupSerializer(serializers.ModelSerializer):
     diagnoses = DiagnosisInfoSerializer(many=True, read_only=True)
+    
+    patient = serializers.PrimaryKeyRelatedField(queryset=Patient.objects.all())
+    image = serializers.ImageField(write_only=True, required=True)
 
     class Meta:
         model=Checkup
-        fields = ["id", "date", "patient"]
+        fields = ["patient", "id", "diagnoses", "image"]
+    
+    def validate_images(self, files):
+        if not files:
+            raise serializers.ValidationError("최소 1개의 이미지는 필요합니다.")
+        return files
+    
+    @transaction.atomic
+    def create(self, validated_data):
+        image = validated_data.pop("image", [])
+        checkup = super().create(validated_data)
         
+        if image is not None:
+            patient = checkup.patient
+            ts = timezone.localtime().strftime("%Y%m%d_%H%M%S")
+            base = f"{patient.id}_{slugify(getattr(patient, 'name', 'patient'))}_{ts}"
+            ext = os.path.splitext(image.name)[1].lower() or ".jpg"
+            image.name = f"{base}{ext}"
+
+            OCTImage.objects.create(image=image)
+        
+        return checkup
+
+
 class DiagnosisFlatSerializer(serializers.ModelSerializer):
     checkup_id  = serializers.IntegerField(source="checkup.id", read_only=True)
     patient_id  = serializers.IntegerField(source="checkup.patient.id", read_only=True)
