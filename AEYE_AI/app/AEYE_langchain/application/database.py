@@ -3,12 +3,14 @@ from database import vectorstore
 
 class AEYE_Langchain_DB:
     
-    def __init__(self):
+    def __init__(self, cfg):
         self.vectorstore : PGVector = vectorstore
-        
+        self.cfg = cfg
         self.retriever = self.vectorstore.as_retriever(
             search_type="mmr",
-            search_kwargs={"k": 4, "fetch_k": 20, "lambda_mult": 0.5},
+            search_kwargs={"k": self.cfg.retriever_k, 
+                           "fetch_k": self.cfg.retriever_fetch_k, 
+                           "lambda_mult": self.cfg.retriever_mult},
         )
     
     def get_retriever(self, ):

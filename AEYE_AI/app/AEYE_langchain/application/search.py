@@ -63,3 +63,4 @@ class AEYE_langchain_search:
         context_text = self._make_context_string(docs, max_chars=2000)
 
         return self.chain.invoke({"context": context_text, "question": question})
+    

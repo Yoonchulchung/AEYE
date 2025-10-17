@@ -11,6 +11,15 @@ import numpy as np
 import torch
 import yaml
 
+@dataclass
+class LangchainConfig:
+    chunk_size: int = 1000
+    chunk_overlap: int = 100
+    temperature: int = 0
+    prompt: str = None
+    retriever_k: int = 4
+    retriever_fetch_k: int = 20
+    retriever_mult: float = 0.5
 
 @dataclass
 class FASTAPIConfig:
@@ -44,7 +53,8 @@ class Config:
     FASTAPI: FASTAPIConfig = field(default_factory=FASTAPIConfig)
     Vision_AI: Vision_AIConfig = field(default_factory=Vision_AIConfig)
     HTTP: HTTPConfig = field(default_factory=HTTPConfig)
-
+    langchain: LangchainConfig = field(default_factory=LangchainConfig)
+    
 
 def _get_config_file(config_path : str):
     
@@ -90,6 +100,7 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
     fastapi_raw = _get(config_data, "FASTAPI", {}) or {}
     vision_ai_raw = _get(config_data, "Vision_AI", {}) or {}
     http_raw    = _get(config_data, "HTTP", {}) or {}
+    langchain_raw = _get(config_data, "langchain", {}) or {}
 
     fastapi = FASTAPIConfig(
         HOST=_get(fastapi_raw, "HOST", FASTAPIConfig.HOST),
@@ -116,11 +127,22 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
         BATCH_TIMEOUT=float(_get(http_raw, "BATCH_TIMEOUT", HTTPConfig.BATCH_TIMEOUT)),
     )
     
+    langchain = LangchainConfig(
+        chunk_size=int(_get(langchain_raw, "chunk_size", LangchainConfig.chunk_size)),
+        chunk_overlap=int(_get(langchain_raw, "chunk_overlap", LangchainConfig.chunk_overlap)),
+        temperature=int(_get(langchain_raw, "temperature", LangchainConfig.temperature)),
+        prompt=_get(langchain_raw, "prompt", LangchainConfig.prompt),
+        retriever_k=int(_get(langchain_raw, "retriever_k", LangchainConfig.retriever_k)),
+        retriever_fetch_k=int(_get(langchain_raw, "retriever_fetch_k", LangchainConfig.retriever_fetch_k)),
+        retriever_mult=float(_get(langchain_raw, "retriever_mult", LangchainConfig.retriever_mult)),
+    )
+    
     return Config(
         type=str(_get(config_data, "type", "develop")),
         FASTAPI=fastapi,
         Vision_AI=vision_ai,
         HTTP=http,
+        langchain=langchain,
     )
     
 def _get(mapping: Dict[str, Any], key: str, default: Any = None) -> Any:

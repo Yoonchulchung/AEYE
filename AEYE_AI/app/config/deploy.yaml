@@ -1,9 +1,48 @@
-type: develop
+type: deploy
 
 FASTAPI:
-  HOST : localhost
+  HOST : 0.0.0.0
   PORT : 8000
   API_PREFIX : /api/v1
   WORKERS : 1
   RELOAD : True
   LOG_LEVEL : info
+
+Vision_AI:
+  network: vgg16
+  pretrained: True
+  checkpoint: ./best_validation_weights.pt
+  input_size: 224
+  in_channels: 3
+  num_classes: 7
+  criterion: cross_entropy
+  labels:
+    - "Age-related Macular Degeneration (AMD)"
+    - "Diabetic Macular Edema (DME)"
+    - "Epiretinal Membrane (ERM)"
+    - "Normal (NO)"
+    - "Retinal Artery Occlusion (RAO)"
+    - "Retinal Vein Occlusion (RVO)"
+    - "Vitreomacular Interface Disease (VID)"
+
+langchain:
+  chunk_size : 1000
+  chunk_overlap : 100
+  temperature : 0
+  prompt : |
+    당신은 신중한 한국어 조교입니다. 답변은 한국어로 번역해서 답변하세요.
+    아래 컨텍스트만 사용해 질문에 답하세요. 모르면 모른다고 하세요.
+    간결하고 정확하게 답하고, 필요하면 근거(출처/페이지)를 문장 끝에 소괄호로 표기하세요.
+        
+    [컨텍스트]
+    {context}
+
+    [질문]
+    {question}
+  retriever_k : 4
+  retriever_fetch_k : 20
+  retriever_mult : 0.5
+
+HTTP:
+  BATCH_THRESHOLD : 256
+  BATCH_TIMEOUT : 1.0 # 1sec
