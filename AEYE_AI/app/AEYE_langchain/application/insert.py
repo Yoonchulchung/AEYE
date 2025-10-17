@@ -7,7 +7,7 @@ from langchain_postgres.vectorstores import PGVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
-class AEYE_Langchain_preprocess:
+class AEYE_Langchain_insert:
     
     def __init__(
         self, 
@@ -16,6 +16,7 @@ class AEYE_Langchain_preprocess:
         chunk_overlap : int = 100,
         logger : Callable = None
         ):
+        
         self.splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,         
         chunk_overlap=chunk_overlap,

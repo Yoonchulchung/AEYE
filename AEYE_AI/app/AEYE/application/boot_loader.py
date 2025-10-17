@@ -6,7 +6,7 @@ from AEYE.application.logger import AEYE_log
 from AEYE.application.process import ProcessGPU
 from AEYE.application.registry import get_cfg
 
-from AEYE_langchain.application.search import AEYE_langchain_search
+from AEYE_langchain.application.langchain import init_langchain
 from database import vectorstore
 llm_model = None
 vision_model = None
@@ -26,7 +26,8 @@ async def bootstrap():
     
     gpu = ProcessGPU(cfg.Vision_AI, cfg.HTTP, aeye_inference, AEYE_log)
     
-    AEYE_langchain_search(vectorstore)
+    init_langchain()
+    
     return gpu
     
     
