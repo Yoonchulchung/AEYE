@@ -7,12 +7,16 @@ from AEYE.application.process import ProcessGPU
 from AEYE.application.registry import get_cfg
 
 from AEYE_langchain.application.langchain import init_langchain
+from AEYE_langchain.application.search import AEYE_langchain_search
 llm_model = None
 vision_model = None
 
 async def bootstrap():
     global llm_model, vision_model
     cfg = get_cfg()
+
+    init_langchain()
+
     model_loader = GPUModelLoader(cfg, 
                                   vision_register=vision_register,
                                   vlm_register=vlm_register, 
@@ -21,11 +25,10 @@ async def bootstrap():
     llm_model = await model_loader.get_model("Qwen2", 0)
     vision_model = await model_loader.get_model('OCTDL', 0)
 
-    aeye_inference = AEYE_Inference(vision_model, llm_model, cfg)
+    aeye_inference = AEYE_Inference(vision_model, llm_model, cfg, AEYE_langchain_search.get_instance())
     
     gpu = ProcessGPU(cfg.Vision_AI, cfg.HTTP, aeye_inference, AEYE_log)
     
-    init_langchain()
     
     return gpu
     

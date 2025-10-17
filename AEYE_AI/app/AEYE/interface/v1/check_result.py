@@ -13,7 +13,7 @@ router = APIRouter()
 async def result(request: Request, ):
     gpu = ProcessGPU.get_instance()
     
-    img, message = await gpu.get_result()
+    img, job_id, message = await gpu.get_result()
     
     if not message:
         return _nothing()

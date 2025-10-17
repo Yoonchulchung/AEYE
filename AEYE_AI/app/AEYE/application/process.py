@@ -5,6 +5,7 @@ from typing import Any, Dict
 import torch
 from fastapi import HTTPException
 from PIL import Image
+from AEYE.application.AI.dataset import pil_to_tensor
 
 
 class ProcessGPU:
@@ -30,6 +31,8 @@ class ProcessGPU:
         self.inference = Inference
         
         self.BATCH_THRESHOLD = self.cfg_HTTP.BATCH_THRESHOLD
+        self.BATCH_TIMEOUT = self.cfg_HTTP.BATCH_TIMEOUT
+        
         self._models: Dict[str, Any] = {}
         
         self._request_lock = asyncio.Lock()
@@ -89,14 +92,14 @@ class ProcessGPU:
         
     async def get_result(self) -> tuple[Image.Image, str]:
         if self.result_queue.empty():
-            return (None, None)
+            return (None, None, None)
         else:
-            img, message = await self.result_queue.get()
-            img = img[0]
+            img, job_id, result = await self.result_queue.get()
+            #img = img[0]
             if isinstance(img, list):
                 raise TypeError(f"Expected a PIL.Image.Image, but got list with length {len(img)}")
             
-            return (img, message)
+            return (img, job_id, result)
         
         
     async def enqueue_batch_or_tensor(self, dataset):
@@ -125,36 +128,52 @@ class ProcessGPU:
         Make Batch until GPU is available.
         '''
         batch = []
-        
-        while True:
-            try:
-                if len(batch) < self.BATCH_THRESHOLD:
-                    async with self._request_lock:
-                        img = await asyncio.wait_for(self.request_queue.get(), timeout=self.cfg_HTTP.BATCH_TIMEOUT)
-                        batch.append(img)
 
-            except asyncio.TimeoutError:
-                pass
+        loop = asyncio.get_running_loop()
+
+        while True:
+            
+            deadline = loop.time() + self.BATCH_TIMEOUT
+
+            while len(batch) < self.BATCH_THRESHOLD:
+                try:
+                    dataset = self.request_queue.get_nowait()
+                    batch.append(dataset)
+                except asyncio.QueueEmpty:
+                    break
+
+            while len(batch) < self.BATCH_THRESHOLD:
+                timeout = deadline - loop.time()
+                if timeout <= 0:
+                    break
+                try:
+                    dataset = await asyncio.wait_for(self.request_queue.get(), timeout=timeout)
+                    batch.append(dataset)
+                except asyncio.TimeoutError:
+                    break
             
             if batch:
-                image = batch.copy()
-                #batch_tensor = torch.stack(batch, dim=0)
-                batch = []
-                #batch_tensor = self.dataset.preprocess(batch_tensor)
-                
-                asyncio.create_task(self._run_inference(image, 0))
+                _batch = batch.copy()
+                batch = []            
+                asyncio.create_task(self._run_inference(_batch, 0))
 
             
     async def _run_inference(self, batch, gpu_id):
         
+        try:
+            item = batch.pop(0)
+            origin_img = item["img"]
+            job_id = item["job_id"]
+        except IndexError:
+            print("No items in batch.")
+            return
+        
+        
         start_time = time.time()
         loop = asyncio.get_event_loop()
-        
-        from AEYE.AI.dataset import pil_to_tensor
-        
-        img = pil_to_tensor(batch)
+        img = pil_to_tensor(origin_img)
         img = img.to('cuda')
         async with self._model_lock:
             result = await loop.run_in_executor(None, self.inference, img)
         async with self._result_lock:
-            await self.result_queue.put((batch, result))
+            await self.result_queue.put((origin_img, job_id, result))
