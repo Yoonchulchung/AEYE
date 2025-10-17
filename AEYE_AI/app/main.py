@@ -29,14 +29,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-from AEYE.interface.v1 import check_result, health, main, upload
+from AEYE.interface.v1 import health, main
+from inference.interface.v1 import upload
+from inference.interface.v1 import result_page
 
 app.include_router(health.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["health"])
 app.include_router(upload.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])
-app.include_router(check_result.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["result"])
+app.include_router(result_page.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["result"])
 app.include_router(main.router, tags=["main"])
 
-from AEYE_langchain.interface.v1 import chat, db
+from chat.interface.v1 import chat, db
 
 app.include_router(chat.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["chat"])
 app.include_router(db.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["db"])

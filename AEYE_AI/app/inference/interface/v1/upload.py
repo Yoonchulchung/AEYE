@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, File, Request, UploadFile
 
 from AEYE.application.process import ProcessGPU
 from AEYE.application.registry import get_cfg
-from AEYE.application.router.http_1_1 import Response_HTTP_1_1
+from inference.application.router.http_1_1 import Response_HTTP_1_1
+import time
 
 router = APIRouter()
 AEYE_cfg = get_cfg()
@@ -22,11 +23,15 @@ async def upload_http_1_1(request : Request, files: Optional[List[UploadFile]] =
     '''
     Please send bytes data. Do not send Pytorch Tensor format.
     '''
+    job_id = f"{int(time.time() * 1000)}"  # ms 단위
 
     dataset = await http.get_tensor(request, files)
     await gpu.enqueue_batch_or_tensor(dataset)   
 
-    return {"msg": "succeed to send data"}
+    return {
+            "status" : "SUCCESS",
+            "job_id" : job_id,
+        }
 
 
 
@@ -36,8 +41,13 @@ async def upload_http_1_1(request : Request, files: Optional[List[UploadFile]] =
     '''
     Please send bytes data. Do not send Pytorch Tensor format.
     '''
+    job_id = f"{int(time.time() * 1000)}"  # ms 단위
 
     dataset = await http.get_pil(request, files)
-    await gpu.enqueue_batch(dataset)   
+    await gpu.enqueue_batch({"img": dataset, "job_id": job_id})   
 
-    return {"msg": "succeed to send data"}
+    return {
+                "status" : "SUCCESS",
+                "job_id" : job_id,
+            }
+
