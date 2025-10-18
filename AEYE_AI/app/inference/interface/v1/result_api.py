@@ -10,11 +10,17 @@ async def inference_result(job_id: str):
     repo = InferenceRepository()
     result = repo.search_by_job_id(job_id)
     
-    payload = {
-        "job_id" : job_id,
-        "classification" : result.classification,
-        "result" : result.result,
-    }
+    if result is not None:
+        payload = {
+            "status" : "SUCCESS",
+            "job_id" : job_id,
+            "classification" : result.classification,
+            "result" : result.result,
+        }
+    else:
+        payload = {
+            "status" : "WAIT"
+        }
     
     return payload
     

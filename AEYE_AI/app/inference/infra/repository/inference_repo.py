@@ -39,6 +39,6 @@ class InferenceRepository(IInferenceResultRepository):
             result = db.query(InferenceResult).filter(InferenceResult.job_id == job_id).first()
         
         if not result:
-            raise HTTPException(status_code=422)
+            return None
     
         return InferenceResult(**row_to_dict(result))
