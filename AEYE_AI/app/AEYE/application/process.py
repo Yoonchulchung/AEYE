@@ -17,7 +17,7 @@ from inference.infra.repository.inference_repo import InferenceRepository
 
 class IProcess(ABC):
     '''
-    싱글톤으로 동작합니다. Process는 AEYE AI 서버의 데이터 처리 담당입니다.
+    싱글톤으로 동작합니다. Process는 AEYE AI 서버의 요청 처리 담당입니다.
     클라이언트가 요청한 데이터를 관리하고 처리할 수 있어야 합니다. 
     
     GPU 처리 여부는 외부에서 결정합니다.
