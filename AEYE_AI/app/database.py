@@ -1,16 +1,14 @@
 from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain_postgres.vectorstores import PGVector
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 from settings import settings
 
-# from sqlalchemy import create_engine
-# from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.orm import sessionmaker
-
-
-# engine_mysql = create_engine(settings.SQLALCHEMY_DATABASE_URL)
-# SessionLocal_mysql = sessionmaker(autocommit=False, autoflush=False, bind=engine_mysql)
-# Base=declarative_base()
+engine_mysql = create_engine(settings.SQLALCHEMY_DATABASE_URL)
+SessionLocal_mysql = sessionmaker(autocommit=False, autoflush=False, bind=engine_mysql)
+Base=declarative_base()
 
 
 embedding_model = SentenceTransformerEmbeddings(model_name="intfloat/multilingual-e5-base")

@@ -9,8 +9,9 @@ class Image:
     updated_at : datetime
     
 @dataclass
-class Result:
+class InferenceResult:
     job_id : str
     result : str
+    classification : str
     created_at : datetime
     updated_at : datetime

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class AEYE_Inference(nn.Module):
     
     _instance = None

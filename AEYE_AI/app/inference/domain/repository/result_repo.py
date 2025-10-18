@@ -1,11 +1,12 @@
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 
-from inference.domain.result import Result
+from inference.domain.infer_result import InferenceResult
 
-class IResultRepository(metaclass=ABCMeta):
+
+class IInferenceResultRepository(metaclass=ABCMeta):
     
     @abstractmethod
-    def save(self, result : Result):
+    def save(self, result : InferenceResult):
         raise NotImplementedError
     
     @abstractmethod

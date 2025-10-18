@@ -11,6 +11,7 @@ import numpy as np
 import torch
 import yaml
 
+
 @dataclass
 class LangchainConfig:
     chunk_size: int = 1000

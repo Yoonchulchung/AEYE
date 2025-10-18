@@ -51,17 +51,3 @@ async def upload_http_1_1(request : Request, files: Optional[List[UploadFile]] =
                 "job_id" : job_id,
             }
 
-
-@router.post("/inference")
-async def inference(request: Request, files: Optional[List[UploadFile]] = File(None),
-                    http = Depends(get_HTTP_parser), gpu = Depends(get_ProcessGPU)):
-    
-    job_id = f"{int(time.time() * 1000)}"  # ms 단위
-
-    dataset = await http.get_pil(request, files)
-    await gpu.enqueue_batch({"img": dataset, "job_id": job_id})   
-
-    return {
-                "status" : "SUCCESS",
-                "job_id" : job_id,
-            }

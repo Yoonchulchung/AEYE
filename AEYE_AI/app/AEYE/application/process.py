@@ -1,11 +1,16 @@
 import asyncio
 import time
+from datetime import datetime
 from typing import Any, Dict
 
 import torch
 from fastapi import HTTPException
 from PIL import Image
+
 from AEYE.application.AI.dataset import pil_to_tensor
+from inference.domain.infer_result import Image as repoImage
+from inference.domain.infer_result import InferenceResult
+from inference.infra.repository.inference_repo import InferenceRepository
 
 
 class ProcessGPU:
@@ -27,6 +32,8 @@ class ProcessGPU:
         self.cfg_HTTP = cfg_HTTP
         
         self.logger = logger
+        
+        self.repo = InferenceRepository()
         
         self.inference = Inference
         
@@ -168,12 +175,24 @@ class ProcessGPU:
             print("No items in batch.")
             return
         
-        
         start_time = time.time()
         loop = asyncio.get_event_loop()
-        img = pil_to_tensor(origin_img)
-        img = img.to('cuda')
+        img = pil_to_tensor(origin_img).to('cuda')
         async with self._model_lock:
             result = await loop.run_in_executor(None, self.inference, img)
         async with self._result_lock:
             await self.result_queue.put((origin_img, job_id, result))
+            
+            now = datetime.now()
+            result = InferenceResult(
+                job_id=job_id,
+                result=result["llm_result"],
+                classification=result["pred"],
+                created_at=now,
+                updated_at=now,
+            )
+            
+            # image = repoImage(
+                
+            # )
+            self.repo.save(result)

@@ -5,9 +5,9 @@ from AEYE.application.AI.registry import llm_register, vision_register, vlm_regi
 from AEYE.application.logger import AEYE_log
 from AEYE.application.process import ProcessGPU
 from AEYE.application.registry import get_cfg
-
 from AEYE_langchain.langchain import init_langchain
 from AEYE_langchain.search import AEYE_langchain_search
+
 llm_model = None
 vision_model = None
 
