@@ -1,0 +1,71 @@
+time="2025-10-18T17:03:35+09:00" level=warning msg="/home/yoonchul/Documents/personal_work/Hanium_2024/AEYE_AI/Docker/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-18T17:03:35+09:00" level=warning msg="Found orphan containers ([aeye_ai aeye_web_front aeye_web_backend opticnet_container somniai_pose lab_apache lab_segmentation lab_classification lab_human3d lab_detection_old]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container mysql  Recreate
+ Container postgres  Created
+ Container mysql  Recreated
+Attaching to aeye_ai_mysql, postgres
+postgres       | 
+postgres       | PostgreSQL Database directory appears to contain a database; Skipping initialization
+postgres       | 
+aeye_ai_mysql  | 2025-10-18 17:03:36+09:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.43-1.el9 started.
+postgres       | 2025-10-18 17:03:36.199 KST [1] LOG:  starting PostgreSQL 16.10 (Debian 16.10-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+postgres       | 2025-10-18 17:03:36.199 KST [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres       | 2025-10-18 17:03:36.199 KST [1] LOG:  listening on IPv6 address "::", port 5432
+postgres       | 2025-10-18 17:03:36.211 KST [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres       | 2025-10-18 17:03:36.225 KST [29] LOG:  database system was shut down at 2025-10-18 17:03:14 KST
+postgres       | 2025-10-18 17:03:36.230 KST [1] LOG:  database system is ready to accept connections
+aeye_ai_mysql  | 2025-10-18 17:03:36+09:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+aeye_ai_mysql  | 2025-10-18 17:03:36+09:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.43-1.el9 started.
+aeye_ai_mysql  | 2025-10-18 17:03:36+09:00 [Note] [Entrypoint]: Initializing database files
+aeye_ai_mysql  | 2025-10-18T08:03:36.395712Z 0 [Warning] [MY-011068] [Server] The syntax '--skip-host-cache' is deprecated and will be removed in a future release. Please use SET GLOBAL host_cache_size=0 instead.
+aeye_ai_mysql  | 2025-10-18T08:03:36.395774Z 0 [Warning] [MY-010918] [Server] 'default_authentication_plugin' is deprecated and will be removed in a future release. Please use authentication_policy instead.
+aeye_ai_mysql  | 2025-10-18T08:03:36.395783Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.43) initializing of server in progress as process 81
+aeye_ai_mysql  | 2025-10-18T08:03:36.401064Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+aeye_ai_mysql  | 2025-10-18T08:03:37.533855Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+aeye_ai_mysql  | 2025-10-18T08:03:39.474340Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
+aeye_ai_mysql  | 2025-10-18T08:03:39.804991Z 6 [Warning] [MY-013360] [Server] Plugin mysql_native_password reported: ''mysql_native_password' is deprecated and will be removed in a future release. Please use caching_sha2_password instead'
+aeye_ai_mysql  | 2025-10-18 17:03:44+09:00 [Note] [Entrypoint]: Database files initialized
+aeye_ai_mysql  | 2025-10-18 17:03:44+09:00 [Note] [Entrypoint]: Starting temporary server
+aeye_ai_mysql  | 2025-10-18T08:03:44.577619Z 0 [Warning] [MY-011068] [Server] The syntax '--skip-host-cache' is deprecated and will be removed in a future release. Please use SET GLOBAL host_cache_size=0 instead.
+aeye_ai_mysql  | 2025-10-18T08:03:44.578656Z 0 [Warning] [MY-010918] [Server] 'default_authentication_plugin' is deprecated and will be removed in a future release. Please use authentication_policy instead.
+aeye_ai_mysql  | 2025-10-18T08:03:44.578668Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.43) starting as process 125
+aeye_ai_mysql  | 2025-10-18T08:03:44.595793Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+aeye_ai_mysql  | 2025-10-18T08:03:44.930929Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+aeye_ai_mysql  | 2025-10-18T08:03:45.185586Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+aeye_ai_mysql  | 2025-10-18T08:03:45.185604Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+aeye_ai_mysql  | 2025-10-18T08:03:45.188617Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
+aeye_ai_mysql  | 2025-10-18T08:03:45.201283Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
+aeye_ai_mysql  | 2025-10-18T08:03:45.201312Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.43'  socket: '/var/run/mysqld/mysqld.sock'  port: 0  MySQL Community Server - GPL.
+aeye_ai_mysql  | 2025-10-18 17:03:45+09:00 [Note] [Entrypoint]: Temporary server started.
+aeye_ai_mysql  | '/var/lib/mysql/mysql.sock' -> '/var/run/mysqld/mysqld.sock'
+aeye_ai_mysql  | 2025-10-18T08:03:45.226476Z 8 [Warning] [MY-013360] [Server] Plugin mysql_native_password reported: ''mysql_native_password' is deprecated and will be removed in a future release. Please use caching_sha2_password instead'
+aeye_ai_mysql  | Warning: Unable to load '/usr/share/zoneinfo/iso3166.tab' as time zone. Skipping it.
+aeye_ai_mysql  | Warning: Unable to load '/usr/share/zoneinfo/leap-seconds.list' as time zone. Skipping it.
+aeye_ai_mysql  | Warning: Unable to load '/usr/share/zoneinfo/leapseconds' as time zone. Skipping it.
+aeye_ai_mysql  | Warning: Unable to load '/usr/share/zoneinfo/tzdata.zi' as time zone. Skipping it.
+aeye_ai_mysql  | Warning: Unable to load '/usr/share/zoneinfo/zone.tab' as time zone. Skipping it.
+aeye_ai_mysql  | Warning: Unable to load '/usr/share/zoneinfo/zone1970.tab' as time zone. Skipping it.
+aeye_ai_mysql  | 2025-10-18 17:03:46+09:00 [Note] [Entrypoint]: Creating database appdb
+aeye_ai_mysql  | 2025-10-18 17:03:46+09:00 [Note] [Entrypoint]: Creating user appuser
+aeye_ai_mysql  | 2025-10-18 17:03:46+09:00 [Note] [Entrypoint]: Giving user appuser access to schema appdb
+aeye_ai_mysql  | 
+aeye_ai_mysql  | 2025-10-18 17:03:46+09:00 [Note] [Entrypoint]: Stopping temporary server
+aeye_ai_mysql  | 2025-10-18T08:03:46.737334Z 13 [System] [MY-013172] [Server] Received SHUTDOWN from user root. Shutting down mysqld (Version: 8.0.43).
+aeye_ai_mysql  | 2025-10-18T08:03:48.593331Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.43)  MySQL Community Server - GPL.
+aeye_ai_mysql  | 2025-10-18 17:03:48+09:00 [Note] [Entrypoint]: Temporary server stopped
+aeye_ai_mysql  | 
+aeye_ai_mysql  | 2025-10-18 17:03:48+09:00 [Note] [Entrypoint]: MySQL init process done. Ready for start up.
+aeye_ai_mysql  | 
+aeye_ai_mysql  | 2025-10-18T08:03:48.938320Z 0 [Warning] [MY-011068] [Server] The syntax '--skip-host-cache' is deprecated and will be removed in a future release. Please use SET GLOBAL host_cache_size=0 instead.
+aeye_ai_mysql  | 2025-10-18T08:03:48.939393Z 0 [Warning] [MY-010918] [Server] 'default_authentication_plugin' is deprecated and will be removed in a future release. Please use authentication_policy instead.
+aeye_ai_mysql  | 2025-10-18T08:03:48.939405Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.43) starting as process 1
+aeye_ai_mysql  | 2025-10-18T08:03:48.946942Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+aeye_ai_mysql  | 2025-10-18T08:03:49.273201Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+aeye_ai_mysql  | 2025-10-18T08:03:49.476818Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+aeye_ai_mysql  | 2025-10-18T08:03:49.476837Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+aeye_ai_mysql  | 2025-10-18T08:03:49.483975Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
+aeye_ai_mysql  | 2025-10-18T08:03:49.494284Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
+aeye_ai_mysql  | 2025-10-18T08:03:49.494302Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.43'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server - GPL.
+aeye_ai_mysql  | 2025-10-18T08:03:56.261450Z 8 [Warning] [MY-013360] [Server] Plugin mysql_native_password reported: ''mysql_native_password' is deprecated and will be removed in a future release. Please use caching_sha2_password instead'
+postgres       | 2025-10-18 17:08:36.320 KST [27] LOG:  checkpoint starting: time
+postgres       | 2025-10-18 17:08:36.359 KST [27] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.010 s, sync=0.005 s, total=0.039 s; sync files=2, longest=0.003 s, average=0.003 s; distance=0 kB, estimate=0 kB; lsn=0/1F12458, redo lsn=0/1F12420
