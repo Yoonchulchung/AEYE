@@ -1,6 +1,47 @@
 import torch
 import torch.nn as nn
 
+from abc import abstractmethod
+from PIL import Image
+
+class IInferenceGPU(nn.Module):
+    '''
+    AEYE AI 서버의 AI 추론을 담당합니다.
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    
+    @abstractmethod
+    def _vision_infer(self, img: Image.Image) -> str:
+        '''
+        OCT 모델을 이용하여 분류를 합니다.
+        '''
+        
+        raise NotImplementedError
+        
+    @abstractmethod
+    def _llm_infer(self, pred: str) -> str:
+        '''
+        RAG 기반 LLM 추론을 합니다. 
+        '''
+        
+        raise NotImplementedError
+    
+    def forward(self, img : Image.Image):
+        
+        cls_output = self._vision_infer(img)
+        llm_output = self._llm_infer(cls_output)
+        
+        result = {
+            "cls_output" : cls_output,
+            "llm_output" : llm_output,
+        }
+        
+        return result
+    
+
 
 class AEYE_Inference(nn.Module):
     
