@@ -35,7 +35,6 @@ class ModelLoaderInterface:
         {
             "vision" : [],
             "llm" : [],
-            "vlm" : [],
         }
         '''
         raise NotImplementedError

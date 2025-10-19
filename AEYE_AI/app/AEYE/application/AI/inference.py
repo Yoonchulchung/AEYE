@@ -96,7 +96,7 @@ class InferenceGPU(IInference):
         self.labels = self.cfg.Vision_AI.labels
         self.langchain_search = langchain_search
     
-    def _vision_inference(self, img : torch.Tensor) -> str:
+    def _vision_infer(self, img : torch.Tensor) -> str:
         
         if not isinstance(img, torch.Tensor):
             raise ValueError("Wrong image type is inserted to Inference GPU")
@@ -109,5 +109,5 @@ class InferenceGPU(IInference):
             
         return pred_label
     
-    def _llm_inference(self, pred):
+    def _llm_infer(self, pred):
         return self.langchain_search.search(f"{pred}의 진료 방법은 뭐야.")
