@@ -4,7 +4,7 @@ import torch.nn as nn
 from abc import abstractmethod
 from PIL import Image
 
-class IInferenceGPU(nn.Module):
+class IInference(nn.Module):
     '''
     AEYE AI 서버의 AI 추론을 담당합니다.
     '''
@@ -42,8 +42,13 @@ class IInferenceGPU(nn.Module):
         return result
     
 
-
-class AEYE_Inference(nn.Module):
+class InferenceGPU(IInference):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    
+class InferenceGPU(nn.Module):
     
     _instance = None
     def __new__(cls, *args, **kwargs):
@@ -80,16 +85,3 @@ class AEYE_Inference(nn.Module):
     
     def _llm_inference(self, pred):
         return self.langchain_search.search(f"{pred}의 진료 방법은 뭐야.")
-    
-    def _inference(self, img):
-        
-        result = {}
-        pred = self._vision_inference(img)
-        llm_result = self._llm_inference(pred)
-        
-        result["pred"] = pred
-        result["llm_result"] = llm_result
-        return result
-        
-    def forward(self, img):
-        return self._inference(img)

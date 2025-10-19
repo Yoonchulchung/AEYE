@@ -6,17 +6,20 @@ from inference.domain.repository.result_repo import IInferenceResultRepository
 from inference.infra.db_model.result import InferenceResult
 from utils.db_utils import row_to_dict
 
+from datetime import datetime
+
 
 class InferenceRepository(IInferenceResultRepository):
     
     def save(self, result : InferenceResultV0):
         
+        now = datetime.now()
         new_result = InferenceResult(
             job_id=result.job_id,
             result=result.result,
             classification=result.classification,
-            created_at=result.created_at,
-            updated_at=result.updated_at
+            created_at=now,
+            updated_at=now,
         )
         
         # image = Image(

@@ -1,6 +1,6 @@
+from langchain.vectorstores.base import VectorStoreRetriever
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.vectorstores.base import VectorStoreRetriever
 
 
 class AEYE_langchain_search:

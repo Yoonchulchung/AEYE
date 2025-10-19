@@ -1,4 +1,4 @@
-from AEYE.application.AI.inference import AEYE_Inference
+from AEYE.application.AI.inference import InferenceGPU
 from AEYE.application.AI.loader import GPUModelLoader
 from AEYE.application.AI.models.llm import shutdown_llm
 from AEYE.application.AI.registry import llm_register, vision_register, vlm_register
@@ -25,7 +25,7 @@ async def bootstrap():
     llm_model = await model_loader.get_model("Qwen2", 0)
     vision_model = await model_loader.get_model('OCTDL', 0)
 
-    aeye_inference = AEYE_Inference(vision_model, llm_model, cfg, AEYE_langchain_search.get_instance())
+    aeye_inference = InferenceGPU(vision_model, llm_model, cfg, AEYE_langchain_search.get_instance())
     
     gpu = Process(cfg, aeye_inference, AEYE_log)
 

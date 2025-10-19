@@ -2,7 +2,7 @@ type: develop
 
 FASTAPI:
   HOST : localhost
-  PORT : 8000
+  PORT : 2000
   API_PREFIX : /api/v1
   WORKERS : 1
   RELOAD : True
@@ -44,5 +44,5 @@ langchain:
   retriever_mult : 0.5
 
 HTTP:
-  BATCH_THRESHOLD : 256
+  BATCH_THRESHOLD : 1
   BATCH_TIMEOUT : 1.0 # 1sec

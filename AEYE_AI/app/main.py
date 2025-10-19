@@ -30,10 +30,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 from AEYE.interface.v1 import health, main
-from inference.interface.v1 import result_api, result_page, upload
+from inference.interface.v1 import result_api, result_page, inference
 
 app.include_router(health.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["health"])
-app.include_router(upload.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])
+app.include_router(inference.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["upload"])
 app.include_router(result_page.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["result"])
 app.include_router(result_api.router, prefix=AEYE_cfg.FASTAPI.API_PREFIX, tags=["result_api"])
 app.include_router(main.router, tags=["main"])
