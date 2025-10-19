@@ -21,7 +21,7 @@ registry.set_cfg(AEYE_cfg)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     gpu = await bootstrap()
-    asyncio.create_task(gpu.micro_batch_schdeuler())
+    asyncio.create_task(gpu.batch_scheduler())
 
     yield
     

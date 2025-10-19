@@ -3,7 +3,7 @@ from AEYE.application.AI.loader import GPUModelLoader
 from AEYE.application.AI.models.llm import shutdown_llm
 from AEYE.application.AI.registry import llm_register, vision_register, vlm_register
 from AEYE.application.logger import AEYE_log
-from AEYE.application.process import ProcessGPU
+from AEYE.application.process import Process
 from AEYE.application.registry import get_cfg
 from AEYE_langchain.langchain import init_langchain
 from AEYE_langchain.search import AEYE_langchain_search
@@ -27,9 +27,8 @@ async def bootstrap():
 
     aeye_inference = AEYE_Inference(vision_model, llm_model, cfg, AEYE_langchain_search.get_instance())
     
-    gpu = ProcessGPU(cfg.Vision_AI, cfg.HTTP, aeye_inference, AEYE_log)
-    
-    
+    gpu = Process(cfg, aeye_inference, AEYE_log)
+
     return gpu
     
     
