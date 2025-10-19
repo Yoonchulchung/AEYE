@@ -110,4 +110,10 @@ class InferenceGPU(IInference):
         return pred_label
     
     def _llm_infer(self, pred):
-        return self.langchain_search.search(f"{pred}의 진료 방법은 뭐야.")
+        result = self.langchain_search.search(f"{pred}의 진료 방법은 뭐야.")
+        llm_summary = self.langchain_search.search(f"{result}를 30자 이하로 요약해봐")
+        
+        return {
+            "result" : result,
+            "diagnosis_summary" : llm_summary,
+        }

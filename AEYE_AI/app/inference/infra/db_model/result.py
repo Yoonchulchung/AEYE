@@ -12,6 +12,6 @@ class Result(Base):
     job_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     classification: Mapped[str] = mapped_column(String(64), nullable=False)
     result: Mapped[str] = mapped_column(String(2048), nullable=False)
-    result_summary: Mapped[str] = mapped_column(String(128), nullable=False)
+    result_summary: Mapped[str] = mapped_column(String(2048), nullable=False)
     created_at: Mapped[str] = mapped_column(DateTime, nullable=False)
     updated_at: Mapped[str] = mapped_column(DateTime, nullable=False)

@@ -162,11 +162,11 @@ class Process:
         self._save_result(result, job_id)
             
     def _save_result(self, result, job_id):
-        result = ResultRepository(
+        result = Result(
             job_id=job_id,
-            result=result["llm_result"],
-            classification=result["pred"],
-            result_summary="",
+            result=result["llm_output"],
+            classification=result["cls_output"],
+            result_summary=result["diagnosis_summary"],
         )
         
         self.result_repo.save(result)
