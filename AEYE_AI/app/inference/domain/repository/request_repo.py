@@ -1,12 +1,12 @@
 from abc import ABCMeta, abstractmethod
 
-from inference.domain.result import Result
+from inference.domain.request import Request
 
 
-class IResultRepository(metaclass=ABCMeta):
+class IRequestRepository(metaclass=ABCMeta):
     
     @abstractmethod
-    def save(self, result : Result):
+    def save(self, request : Request):
         raise NotImplementedError
     
     @abstractmethod

@@ -7,12 +7,12 @@ from abc import ABC, abstractmethod
 
 import torch
 from fastapi import HTTPException
-from PIL import Image
 
 from AEYE.application.AI.dataset import pil_to_tensor
-from inference.domain.infer_result import Image as repoImage
-from inference.domain.infer_result import InferenceResult
-from inference.infra.repository.inference_repo import InferenceRepository
+from inference.domain.result import Result
+from inference.infra.repository.result_repo import ResultRepository
+from inference.domain.request import Request
+from inference.infra.repository.request_repo import RequestRepository
 
 
 class IProcess(ABC):
@@ -73,7 +73,9 @@ class Process:
         
         self.logger = logger
         
-        self.repo = InferenceRepository()
+        self.request_repo = RequestRepository()
+        self.result_repo = ResultRepository()
+
         
         self.inference = Inference
         
@@ -105,6 +107,10 @@ class Process:
         async with self._request_lock:
             await self.request_queue.put(dataset)
             
+        self._save_request(dataset)
+        
+    def _save_request(self, dataset):
+        self.request_repo.save(dataset["img"], dataset["job_id"])
     
     async def batch_scheduler(self) -> None:
         
@@ -156,13 +162,11 @@ class Process:
         self._save_result(result, job_id)
             
     def _save_result(self, result, job_id):
-        result = InferenceResult(
+        result = ResultRepository(
             job_id=job_id,
             result=result["llm_result"],
             classification=result["pred"],
+            result_summary="",
         )
         
-        # image = repoImage(
-            
-        # )
-        self.repo.save(result)
+        self.result_repo.save(result)
