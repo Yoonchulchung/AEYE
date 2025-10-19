@@ -12,7 +12,7 @@ args = parser.parse_args()
 from contextlib import asynccontextmanager
 
 from AEYE.application import registry as registry
-from AEYE.application.boot_loader import bootstrap, shutdown
+from boot_loader import bootstrap, shutdown
 from AEYE.application.config import load_config
 
 AEYE_cfg = load_config(args.config)
