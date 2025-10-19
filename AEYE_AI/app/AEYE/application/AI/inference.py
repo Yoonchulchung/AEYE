@@ -89,7 +89,8 @@ class InferenceGPU(IInference):
         super().__init__()
         self.cfg = cfg
         
-        self.model_loder = model_loader
+        self.model_loader = model_loader
+        
         self.vision_model = self.model_loader.get_vision()
         
         self.labels = self.cfg.Vision_AI.labels

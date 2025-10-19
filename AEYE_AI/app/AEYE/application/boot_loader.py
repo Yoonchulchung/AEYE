@@ -17,14 +17,11 @@ async def bootstrap():
 
     init_langchain()
 
-    model_loader = GPUModelLoader(cfg, 
-                                  vision_register=vision_register,
-                                  vlm_register=vlm_register, 
-                                  llm_register=llm_register,
-                                  logger=AEYE_log)
-    llm_model = await model_loader.get_model("Qwen2", 0)
-    vision_model = await model_loader.get_model('OCTDL', 0)
-
+    registry = {
+        "vision_register" : vision_register,
+        "llm_register" : llm_register,
+    }
+    model_loader = GPUModelLoader(cfg, registry, AEYE_log)
     aeye_inference = InferenceGPU(model_loader, cfg, AEYE_langchain_search.get_instance())
     
     gpu = Process(cfg, aeye_inference, AEYE_log)
