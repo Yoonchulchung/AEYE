@@ -5,13 +5,13 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from PIL import Image
 
-from AEYE.application.process import ProcessGPU
+from AEYE.application.process import Process
 
 router = APIRouter()
 
 @router.get("/result")
 async def result(request: Request, ):
-    gpu = ProcessGPU.get_instance()
+    gpu = Process.get_instance()
     
     img, job_id, message = await gpu.get_result()
     
