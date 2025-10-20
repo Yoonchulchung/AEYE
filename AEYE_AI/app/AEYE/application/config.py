@@ -27,7 +27,8 @@ class LangchainConfig:
 class FASTAPIConfig:
     HOST: str = "localhost"
     PORT: int = 8000
-    API_PREFIX: str = "/fastapi"
+    API_PREFIX: str = "/api"
+    VIEW_PREFIX: str = "/view"
     WORKERS: int = 1
     RELOAD : bool = False
     LOG_LEVEL : str = "info"
@@ -109,6 +110,7 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
         HOST=_get(fastapi_raw, "HOST", FASTAPIConfig.HOST),
         PORT=int(_get(fastapi_raw, "PORT", FASTAPIConfig.PORT)),
         API_PREFIX=_get(fastapi_raw, "API_PREFIX", FASTAPIConfig.API_PREFIX),
+        VIEW_PREFIX=_get(fastapi_raw, "VIEW_PREFIX", FASTAPIConfig.VIEW_PREFIX),
         WORKERS=int(_get(fastapi_raw, "WORKERS", FASTAPIConfig.WORKERS)),
         RELOAD=_get(fastapi_raw, "RELOAD", FASTAPIConfig.RELOAD),
         LOG_LEVEL=_get(fastapi_raw, "LOG_LEVEL", FASTAPIConfig.LOG_LEVEL),
