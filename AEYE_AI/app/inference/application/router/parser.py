@@ -20,28 +20,65 @@ class Parser(Protocol):
         - application/x-www-form-urlencoded
         
     '''
+    async def _img_from_form_data(self, request : Request): 
+        '''
+        multipart/form-data 요청에서 image를 추출합니다.
+        '''
+        raise NotImplementedError
+
+    async def _img_from_octet_stream(self, request : Request): 
+        '''
+        application/octet-stream 요청에서 image를 추출합니다.
+        '''
+        raise NotImplementedError
+
+    async def _img_from_json(self, request : Request): 
+        '''
+        application/json 요청에서 image를 추출합니다.
+        '''
+        raise NotImplementedError
+
+    async def _img_from_urlencoded(self, request : Request): 
+        '''
+        application/x-www-form-urlencoded 요청에서 image를 추출합니다.
+        '''
+        raise NotImplementedError
     
-    async def get_tensor(self, request : Request) -> torch.Tensor: 
-        '''
-        요청에서 image를 추출하여 Tensor 타입으로 반환합니다. 
-        '''
-        raise NotImplementedError
+    async def get_img(self, request : Request, files : Optional[UploadFile] = File(None)):
+        
+        handlers = {
+                    'multipart/form-data' : self._img_from_form_data,
+                    'application/octet-stream' : self._img_from_octet_stream,
+                    'application/json' : self._img_from_json,
+                    'application/x-www-form-urlencoded' : self._img_from_urlencoded,
+                }
+                
+        ct = _get_content_type(request)
 
-    async def get_pil(self, request : Request) -> Image.Image :
-        '''
-        요청에서 image를 추출하여 PIL.Image 타입으로 반환합니다.
-        '''
-        raise NotImplementedError
+        handler = handlers.get(ct)
 
+        if handler is None:
+            AEYE_log('[Warning] Invalid Content-Type:', ct)
+            allow = ', '.join(sorted(handlers.keys()))
+            raise HTTPException(status_code=415, detail=f"Only [{allow}] is supported.")
 
-class RequestParser(Parser):
+        if files:
+            return await handler(request, files)
+        else:
+            return await handler(request)
+    
+
+class RequestParserTensor(Parser):
     def __init__(self, cfg):
         super().__init__()
         
         self.cfg = cfg
 
-    async def _get_tensor_from_octet_stream(self, request : Request) -> torch.Tensor:
+    async def _img_from_fom_data(self, request : Request): 
+        return None
 
+    async def _img_from_octet_stream(self, request : Request): 
+        
         try:
             body = await request.body()
             
@@ -54,9 +91,7 @@ class RequestParser(Parser):
             AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
 
-    
-    async def _get_tensor_from_json(self, request) -> torch.Tensor:
-
+    async def _img_from_json(self, request : Request): 
         try:
             json_body = await request.json()
             base64_img = json_body.get('image')
@@ -69,13 +104,35 @@ class RequestParser(Parser):
         except Exception as e:
             AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
+
+    async def _img_from_urlencoded(self, request : Request): 
+        return None
         
-    
-    async def _get_tensor_from_multipart(self, request : Request) -> torch.Tensor:
-        ...
+
+class RequestParserPIL(Parser):
+    def __init__(self, cfg):
+        super().__init__()
         
+        self.cfg = cfg
     
-    async def _get_pil_from_json(self, request : Request) -> Image.Image:
+    async def _img_from_form_data(self, request : Request): 
+        return None
+
+    async def _img_from_octet_stream(self, request : Request): 
+        
+        try:
+            body = await request.body()
+            
+            if not _is_image_bytes(body):
+                raise HTTPException(status_code=400, detail="Invalid image data. Don't send tensor!")
+        
+            return _image_bytes_to_pil(body)
+        
+        except Exception as e:
+            AEYE_log('[Error] Failed to parse data from body:', str(e))
+            raise HTTPException(status_code=400, detail=f"Error : {e}")
+
+    async def _img_from_json(self, request : Request): 
         try:    
             json_body = await request.json()
             base64_img = json_body.get('image')
@@ -89,65 +146,12 @@ class RequestParser(Parser):
         except Exception as e:
             AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
-        
+
+    async def _img_from_urlencoded(self, request : Request): 
+        return None
     
-    async def _get_pil_from_octet_stream(self, request : Request) -> Image.Image: 
-        try:
-            body = await request.body()
-            
-            if not _is_image_bytes(body):
-                raise HTTPException(status_code=400, detail="Invalid image data. Don't send tensor!")
-        
-            return _image_bytes_to_pil(body)
-        
-        except Exception as e:
-            AEYE_log('[Error] Failed to parse data from body:', str(e))
-            raise HTTPException(status_code=400, detail=f"Error : {e}")
-    
-    
-    async def get_tensor(self, request : Request, files : Optional[UploadFile] = File(None)) -> torch.Tensor:
-        
-        ct = _get_content_type(request)
-        handlers = {
-                    'application/octet-stream' : self._get_tensor_from_octet_stream,
-                    'application/json' : self._get_tensor_from_json,
-                    'multipart/form-data' : self._get_tensor_from_multipart,
-                }
-        
-        handler = handlers.get(ct)
-        
-        if handler is None:
-            AEYE_log('[Warning] Invalid Content-Type:', ct)
-            allow = ', '.join(sorted(handlers.keys()))
-            raise HTTPException(status_code=415, detail=f"Only {set(allow)} is supported.")
-
-        if files:
-            return await handler(request, files)
-        else:
-            return await handler(request)
         
         
-    async def get_pil(self, request, files : Optional[UploadFile] = File(None)) -> Image.Image:
-        
-        ct = _get_content_type(request)
-        handlers = {
-                    'application/octet-stream' : self._get_pil_from_octet_stream,
-                    'application/json' : self._get_pil_from_json,
-                }
-        
-        handler = handlers.get(ct)
-        
-        if handler is None:
-            AEYE_log('[Warning] Invalid Content-Type:', ct)
-            allow = ', '.join(sorted(handlers.keys()))
-            raise HTTPException(status_code=415, detail=f"Only {set(allow)} is supported.")
-
-        if files:
-            return await handler(request, files)
-        else:
-            return await handler(request)
-
-
 def _get_content_type(request):
         return request.headers.get('content-type', '').lower().split(';')[0].strip()
     
