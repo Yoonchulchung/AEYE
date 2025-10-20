@@ -19,6 +19,7 @@ async def inference_result(job_id: str):
             "job_id" : job_id,
             "classification" : result.classification,
             "result" : result.result,
+            "summary": result.result_summary
         }
     else:
         payload = {

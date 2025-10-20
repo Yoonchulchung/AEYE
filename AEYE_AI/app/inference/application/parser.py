@@ -85,7 +85,7 @@ class RequestParserTensor(Parser):
             if not _is_image_bytes(body):
                 raise HTTPException(status_code=400, detail="Invalid image data. Don't send tensor!")
         
-            return _img_bytes_to_tensor(body)
+            return self._img_bytes_to_tensor(body)
         
         except Exception as e:
             AEYE_log('[Error] Failed to parse data from body:', str(e))
@@ -100,13 +100,21 @@ class RequestParserTensor(Parser):
             if not _is_image_bytes(bytes):
                 raise HTTPException(status_code=400, detail="Invalid image data. Don't send tensor!")
             
-            return _img_bytes_to_tensor(bytes)
+            return self._img_bytes_to_tensor(bytes)
         except Exception as e:
             AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
 
     async def _img_from_urlencoded(self, request : Request): 
         return None
+        
+    def _img_bytes_to_tensor(self, byte_data : bytes) -> torch.Tensor:
+        try:
+            img = Image.open(io.BytesIO(byte_data)).convert('RGB')
+            t_tensor = transforms.ToTensor()
+            return t_tensor(img)
+        except Exception as e:
+            raise ValueError(f"Failed to decode image: {e}")
         
 
 class RequestParserPIL(Parser):
@@ -126,7 +134,7 @@ class RequestParserPIL(Parser):
             if not _is_image_bytes(body):
                 raise HTTPException(status_code=400, detail="Invalid image data. Don't send tensor!")
         
-            return _image_bytes_to_pil(body)
+            return self._image_bytes_to_pil(body)
         
         except Exception as e:
             AEYE_log('[Error] Failed to parse data from body:', str(e))
@@ -142,7 +150,7 @@ class RequestParserPIL(Parser):
             if not _is_image_bytes(bytes):
                 raise HTTPException(status_code=400, detail="Invalid image data. Don't send tensor!")
             
-            return _image_bytes_to_pil(bytes)
+            return self._image_bytes_to_pil(bytes)
         except Exception as e:
             AEYE_log('[Error] Failed to parse data from body:', str(e))
             raise HTTPException(status_code=400, detail=f"Error : {e}")
@@ -150,8 +158,13 @@ class RequestParserPIL(Parser):
     async def _img_from_urlencoded(self, request : Request): 
         return None
     
-        
-        
+    def _image_bytes_to_pil(self, byte_data : bytes) -> Image.Image:
+        image_stream = io.BytesIO(byte_data)
+        image = Image.open(image_stream)
+        image = image.convert("RGB")
+        return image
+
+    
 def _get_content_type(request):
         return request.headers.get('content-type', '').lower().split(';')[0].strip()
     
@@ -184,17 +197,4 @@ def _is_image_bytes(b: bytes) -> bool:
         )
 
 
-def _img_bytes_to_tensor(byte_data : bytes) -> torch.Tensor:
-        try:
-            img = Image.open(io.BytesIO(byte_data)).convert('RGB')
-            t_tensor = transforms.ToTensor()
-            return t_tensor(img)
-        except Exception as e:
-            raise ValueError(f"Failed to decode image: {e}")
         
-        
-def _image_bytes_to_pil(byte_data : bytes) -> Image.Image:
-    image_stream = io.BytesIO(byte_data)
-    image = Image.open(image_stream)
-    image = image.convert("RGB")
-    return image
