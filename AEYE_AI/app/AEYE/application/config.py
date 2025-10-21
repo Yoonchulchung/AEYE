@@ -14,6 +14,7 @@ import yaml
 
 @dataclass
 class LangchainConfig:
+    model : str = "Qwen2"
     chunk_size: int = 1000
     chunk_overlap: int = 100
     temperature: int = 0
@@ -33,6 +34,7 @@ class FASTAPIConfig:
 
 @dataclass
 class Vision_AIConfig:
+    model : str = "OCTDL"
     network: str = "vgg16"
     pretrained: bool = True
     checkpoint: str = None
@@ -113,6 +115,7 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
     )
     
     vision_ai = Vision_AIConfig(
+        model=_get(vision_ai_raw, "model", Vision_AIConfig.model),
         network=_get(vision_ai_raw, "network", Vision_AIConfig.network),
         pretrained=bool(_get(vision_ai_raw, "pretrained", Vision_AIConfig.pretrained)),
         checkpoint=_get(vision_ai_raw, "checkpoint", Vision_AIConfig.checkpoint),
@@ -129,6 +132,7 @@ def _parse_config(config_data : Union[Dict[str, Any], types.ModuleType, Config])
     )
     
     langchain = LangchainConfig(
+        model=_get(langchain_raw, "model", LangchainConfig.model),
         chunk_size=int(_get(langchain_raw, "chunk_size", LangchainConfig.chunk_size)),
         chunk_overlap=int(_get(langchain_raw, "chunk_overlap", LangchainConfig.chunk_overlap)),
         temperature=int(_get(langchain_raw, "temperature", LangchainConfig.temperature)),

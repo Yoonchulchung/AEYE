@@ -9,6 +9,7 @@ FASTAPI:
   LOG_LEVEL : info
 
 Vision_AI:
+  model: OCTDL
   network: vgg16
   pretrained: True
   checkpoint: ./best_validation_weights.pt
@@ -26,6 +27,7 @@ Vision_AI:
     - "Vitreomacular Interface Disease (VID)"
 
 langchain:
+  model: Qwen2
   chunk_size : 1000
   chunk_overlap : 100
   temperature : 0
