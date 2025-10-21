@@ -1,18 +1,8 @@
 import asyncio
-import time
-from datetime import datetime
+from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from abc import ABC, abstractmethod
-
 import torch
-from fastapi import HTTPException
-
-from AEYE.application.AI.dataset import pil_to_tensor
-from inference.domain.result import Result
-from inference.infra.repository.result_repo import ResultRepository
-from inference.domain.request import Request
-from inference.infra.repository.request_repo import RequestRepository
 
 
 class IProcess(ABC):
@@ -67,16 +57,17 @@ class Process:
             raise RuntimeError("Process is not initialized yet")
         return cls._instance
     
-    def __init__(self, cfg, Inference, logger):
+    def __init__(self, cfg, Inference, Repo, Entity, logger):
         
         self.cfg_HTTP = cfg.HTTP
         
         self.logger = logger
         
-        self.request_repo = RequestRepository()
-        self.result_repo = ResultRepository()
-
+        self.request_repo = Repo["Request"]
+        self.result_repo = Repo["Result"]
         
+        self.result_entity = Entity["Result"]
+    
         self.inference = Inference
         
         self.BATCH_THRESHOLD = self.cfg_HTTP.BATCH_THRESHOLD
@@ -87,11 +78,7 @@ class Process:
         self._request_lock = asyncio.Lock()
         self.request_queue = asyncio.Queue()
         
-        self._model_lock = asyncio.Lock()
-        self.model_queeu = asyncio.Queue()
-        
-        self._result_lock = asyncio.Lock()
-        self.result_queue = asyncio.Queue()
+        self._inference_lock = asyncio.Lock()
         
         if not torch.cuda.is_available():
             raise ValueError(f"ProcessGPU is only available with gpu")
@@ -111,6 +98,7 @@ class Process:
         
     def _save_request(self, dataset):
         self.request_repo.save(dataset["img"], dataset["job_id"])
+    
     
     async def batch_scheduler(self) -> None:
         
@@ -156,13 +144,13 @@ class Process:
         img : torch.Tensor = item["img"].unsqueeze(0).to(self.device)
         
         loop = asyncio.get_event_loop()
-        async with self._model_lock:
+        async with self._inference_lock:
             result = await loop.run_in_executor(None, self.inference, img)
         
         self._save_result(result, job_id)
             
     def _save_result(self, result, job_id):
-        result = Result(
+        result = self.result_entity(
             job_id=job_id,
             result=result["llm_output"],
             classification=result["cls_output"],
