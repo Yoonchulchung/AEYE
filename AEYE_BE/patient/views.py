@@ -4,8 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from .models import Patient
-from .serializers import PatientSaveSerializer, PatientSerializer, \
-                         PatientDiagnoseSerializer
+from .serializers import PatientSaveSerializer, PatientSerializer
 
 
 class PatientViewSet(viewsets.ModelViewSet):
@@ -49,13 +48,13 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='diagnoses')
     def diagnoses(self, request, pk=None):
-        from diagnose.models import DiagnosisInfo
+        from diagnosis.models import DiagnosisInfo
         qs = (DiagnosisInfo.objects
               .filter(checkup__patient_id=pk)
               .select_related("checkup", "checkup__patient")
               .order_by("-created_at"))
         page = self.paginate_queryset(qs)
-        from diagnose.serializers import DiagnosisFlatSerializer
+        from diagnosis.serializers import DiagnosisFlatSerializer
         if page is not None:
             return self.get_paginated_response(DiagnosisFlatSerializer(page, many=True).data)
         return Response(DiagnosisFlatSerializer(qs, many=True).data)

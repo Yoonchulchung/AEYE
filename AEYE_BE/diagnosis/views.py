@@ -12,7 +12,7 @@ from .serializers import CheckupSerializer, DiagnosisInfoSerializer
 import io
 
 
-class DiagnoseViewSet(viewsets.ModelViewSet):
+class DiagnosisViewSet(viewsets.ModelViewSet):
     serializer_class = CheckupSerializer
      
     def get_queryset(self):

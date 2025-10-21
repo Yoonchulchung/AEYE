@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import Patient
-from diagnose.serializers import CheckupSerializer
+from diagnosis.serializers import CheckupSerializer
 
 
 class PatientSerializer(serializers.ModelSerializer):

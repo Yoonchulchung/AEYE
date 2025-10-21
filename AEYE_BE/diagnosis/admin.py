@@ -12,7 +12,7 @@ class CheckupAdmin(admin.ModelAdmin):
         return obj.patient.name
 
 @admin.register(DiagnosisInfo)
-class DiagnoseAdmin(admin.ModelAdmin):
+class DiagnosisAdmin(admin.ModelAdmin):
     list_display = ['checkup_patient_name', 'checkup', 'kind', 'status', 'result', 'classification']
     search_fields = ['checkup']
     
