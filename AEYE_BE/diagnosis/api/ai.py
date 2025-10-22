@@ -1,16 +1,15 @@
-import io
 import time
 
 import httpx
 from asgiref.sync import async_to_sync
 from django.db import transaction
-from django.db.models.fields.files import ImageFieldFile
-from PIL import Image
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 
+from utils.dataset import img_to_bytes
+
 from ..models import Checkup
-from ..serializer.request import DiagnosisRequestSerializer
+from ..serializer.request import DiagnosisAIRequestSerializer
 from ..serializer.write import (CheckupNewWriteSerializer,
                                 DiagnosisAIWriteSerializer,
                                 OCTImageWriteSerializer)
@@ -60,7 +59,7 @@ class AIDiagnosis(mixins.CreateModelMixin,
             
     async def _req_infer(self, img, url):
         
-        img_bytes = _img_to_bytes(img)
+        img_bytes = img_to_bytes(img)
         headers = {
             'Content-Type': 'application/octet-stream'
         }
@@ -84,7 +83,7 @@ class AIDiagnosis(mixins.CreateModelMixin,
     
 class DiagnosisAIViewSet(AIDiagnosis):
 
-    serializer_class = DiagnosisRequestSerializer
+    serializer_class = DiagnosisAIRequestSerializer
     queryset = Checkup.objects.order_by("-created_at")
     
     @transaction.atomic
@@ -118,27 +117,6 @@ class DiagnosisAIViewSet(AIDiagnosis):
                     }
             
         return Response(data=payload, status=status.HTTP_200_OK)
-        
-
-def _img_to_bytes(img_file : ImageFieldFile) -> io.BytesIO:
-    buffer = io.BytesIO()
-    
-    try:    
-        img_file.open(mode='rb')
-        pil_image = Image.open(img_file)
-
-        if pil_image.mode == 'RGBA':
-            pil_image = pil_image.convert('RGB')
-
-        pil_image.save(buffer, format="JPEG") 
-        return buffer.getvalue() 
-        
-    except Exception as e:
-        print(f"Error converting image to PIL: {e}")
-        return None
-    finally:
-        if not img_file.closed:
-            img_file.close()
     
     
 def _save_diagnosis_result(checkup, infer_result):
