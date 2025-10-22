@@ -5,7 +5,6 @@ from utils.common_models import CommonModel
 
 
 class Checkup(CommonModel):
-    checkup_id = models.IntegerField(primary_key=True)
     
     patient = models.ForeignKey(
         Patient, on_delete=models.CASCADE, related_name='checkups', db_index=True
@@ -22,7 +21,7 @@ class OCTImage(CommonModel):
         related_name='oct_images',
         null=True,
     )
-    img_path = models.ImageField(upload_to='patient_oct_images/')
+    oct_img = models.ImageField(upload_to='patient_oct_images/')
     
     def __str__(self):
         return f"OCT Image({self.image})"
@@ -53,7 +52,6 @@ class Diagnosis(CommonModel):
         AI     = 'AI', 'AI'
         REVIEW = 'RV', 'REVIEW'
     
-    diagnosis_id = models.IntegerField(primary_key=True)
     checkup = models.ForeignKey(
         Checkup, on_delete=models.CASCADE, related_name='diagnosis', db_index=True
     )

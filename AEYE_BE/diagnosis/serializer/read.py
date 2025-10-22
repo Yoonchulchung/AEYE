@@ -29,7 +29,8 @@ class DiagnosisReadSerializer(serializers.ModelSerializer):
     
     class Meta:
         model=Diagnosis
-        fields = ["date", "kind", "status", "classification", "result", "result_summary", "ai_version"]
+        fields = ["date", "kind", "status", "classification", 
+                  "result", "result_summary", "ai_version"]
 
     def get_ai_version(self, obj):
         
@@ -48,10 +49,10 @@ class CheckupReadSerializer(serializers.ModelSerializer):
         "patient_name": "환자 이름",
         "oct_image": {
             "oct_img": ""
-        }
+        },
         "meta": {
             "eye_side": "RIGHT"
-        }
+        },
         "diagnosis": {
             "date": "진료 일자", 
             "kind": "AI",

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Checkup, DiagnosisInfo
+from .models import Checkup, Diagnosis
 
 
 @admin.register(Checkup)
@@ -11,7 +11,7 @@ class CheckupAdmin(admin.ModelAdmin):
     def patient_name(self, obj):
         return obj.patient.name
 
-@admin.register(DiagnosisInfo)
+@admin.register(Diagnosis)
 class DiagnosisAdmin(admin.ModelAdmin):
     list_display = ['checkup_patient_name', 'checkup', 'kind', 'status', 'result', 'classification']
     search_fields = ['checkup']
