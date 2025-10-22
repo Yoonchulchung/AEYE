@@ -1,22 +1,23 @@
+import io
 import time
 
 import httpx
-from django.db import transaction
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.decorators import action
 from asgiref.sync import async_to_sync
+from django.db import transaction
+from django.db.models.fields.files import ImageFieldFile
 from PIL import Image
+from rest_framework import mixins, status, viewsets
+from rest_framework.response import Response
 
 from ..models import Checkup
-from ..serializer.write import OCTImageWriteSerializer, CheckupNewWriteSerializer, \
-                               DianosisAIWriteSerializer
+from ..serializer.request import DiagnosisRequestSerializer
+from ..serializer.write import (CheckupNewWriteSerializer,
+                                DiagnosisAIWriteSerializer,
+                                OCTImageWriteSerializer)
 
-import io
 
-
-class AIDiagnosis(APIView):
+class AIDiagnosis(mixins.CreateModelMixin,
+                  viewsets.GenericViewSet):
     '''
     AI 추론 요청 API 입니다. 
     
@@ -42,14 +43,14 @@ class AIDiagnosis(APIView):
         start  = time.monotonic()
         job_id = await self._req_infer(img, self.ai_diagnosis_url)
 
-        ai_result_url = f"{self.ai_diagnosis_url}/{job_id}"
+        ai_result_url = f"{self.ai_diagnosis_url}/result/{job_id}"
         while True:
             infer_result = await self._get_infer_result(url=ai_result_url)
             
             status = infer_result.get("status")
             if status == "SUCCESS":
                 return infer_result
-            elif status == "WAITING":
+            elif status == "WAIT":
                 ...
             else:
                 raise ValueError(infer_result)
@@ -60,9 +61,12 @@ class AIDiagnosis(APIView):
     async def _req_infer(self, img, url):
         
         img_bytes = _img_to_bytes(img)
+        headers = {
+            'Content-Type': 'application/octet-stream'
+        }
         
         async with httpx.AsyncClient() as client:
-            resp = await client.post(url, content=img_bytes, headers=self.headers, timeout=30.0)
+            resp = await client.post(url, content=img_bytes, headers=headers, timeout=30.0)
         
         if resp.status_code not in (200, 202):
             resp.raise_for_status()
@@ -80,14 +84,11 @@ class AIDiagnosis(APIView):
     
 class DiagnosisAIViewSet(AIDiagnosis):
 
-    def get_queryset(self):
-        return (
-            Checkup.objects
-            .order_by("-created_at")
-        )
+    serializer_class = DiagnosisRequestSerializer
+    queryset = Checkup.objects.order_by("-created_at")
     
     @transaction.atomic
-    def post(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         client_data = request.data.copy()
 
         checkup_serializer = CheckupNewWriteSerializer(data=client_data)
@@ -100,54 +101,58 @@ class DiagnosisAIViewSet(AIDiagnosis):
         oct_img_serializer.is_valid(raise_exception=True)
         oct_img = oct_img_serializer.save()
         
-        img = oct_img.validated_data.get('oct_img')
+        img = oct_img.oct_img
         
         infer_result = async_to_sync(self._infer_img)(img)
         
         try:
-            diagnosis = _save_diagnosis_result(checkup, infer_result)
+            payload = _save_diagnosis_result(checkup, infer_result)
+                        
+        except Exception as e:
             payload = {
-                
-            }
-        except Exception:
-            payload = {
-                    "error": {
-                        "code": "INVALID_IMAGE",
-                        "message": "Image is corrupted or not supported.",
-                        "patient_id": "환자 ID",
-                        "details": {
-                            "allowed_extensions" : ["jpg","png","dcm"] 
+                        "error": {
+                            "code": "INFERENCE_FAILED",
+                            "message": "AI model inference failed or an unexpected error occurred.",
+                            "details": str(e),
                         },
-                    },
                     }
-        
+            
         return Response(data=payload, status=status.HTTP_200_OK)
         
 
-def _img_to_bytes(img_file) -> io.BytesIO:
-
+def _img_to_bytes(img_file : ImageFieldFile) -> io.BytesIO:
     buffer = io.BytesIO()
-
+    
     try:    
-        pil_image = Image.open(img_file.file)
+        img_file.open(mode='rb')
+        pil_image = Image.open(img_file)
+
+        if pil_image.mode == 'RGBA':
+            pil_image = pil_image.convert('RGB')
+
         pil_image.save(buffer, format="JPEG") 
         return buffer.getvalue() 
         
     except Exception as e:
         print(f"Error converting image to PIL: {e}")
         return None
+    finally:
+        if not img_file.closed:
+            img_file.close()
     
     
-def _save_diagnosis_result(self, checkup, infer_result):
+def _save_diagnosis_result(checkup, infer_result):
         payload = {
             "checkup_id": checkup.id,
             "kind": "AI",
-            "status": infer_result.get("status"),
+            "status": "MR",
             "classification": infer_result.get("classification"),
             "result": infer_result.get("result"),
-            "result_summary": infer_result.get("result_summary")   
+            "result_summary": infer_result.get("summary")   
         }
         
-        infer_serializer = DianosisAIWriteSerializer(data=payload)
-        infer_serializer.is_valid(raise_exception=True)
-        return infer_serializer.save()
+        diagnosis_serializer = DiagnosisAIWriteSerializer(data=payload)
+        diagnosis_serializer.is_valid(raise_exception=True)
+        diagnosis_serializer.save()
+        
+        return diagnosis_serializer.data

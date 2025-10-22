@@ -1,9 +1,13 @@
 from rest_framework import serializers
-from ..models import Diagnosis, Checkup
-from .serializer import DiagnosisSerializer, OCTImageSerializer, CheckupMetaSerializer
-from ai.serializers import AIVersionSerializer
+
 from ai.models import AIVersion
-        
+from ai.serializers import AIVersionSerializer
+
+from ..models import Checkup, Diagnosis
+from .serializer import (CheckupMetaSerializer, DiagnosisSerializer,
+                         OCTImageSerializer)
+
+
 class DiagnosisReadSerializer(serializers.ModelSerializer):
     '''
     Response Body:

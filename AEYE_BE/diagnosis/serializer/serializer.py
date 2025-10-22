@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from ..models import Diagnosis, OCTImage, CheckupMeta
+
+from ..models import CheckupMeta, Diagnosis, OCTImage
+
 
 class DiagnosisSerializer(serializers.ModelSerializer):
     '''
