@@ -7,5 +7,17 @@ class Patient(CommonModel):
     
     name = models.CharField(max_length=30)
     DOB = models.DateField()
+    profile_image = models.ImageField()
     visit_nums = models.IntegerField(default=1)
-    recent_visit_date = models.DateField(auto_now_add=True)
+    recent_visit = models.DateField(auto_now_add=True)
+    severity_percentage = models.IntegerField()
+    
+    class Status(models.TextChoices):
+        MODERATE_RISK = 'MR', 'MODERATE_RISK'
+        LOW_RISK = 'LR', 'LOW_RISK'
+        HIGH_RISK = 'HR', 'HIGH_RISK'
+        
+    status = models.CharField(max_length=2, choices=Status.choices, db_index=True)
+    
+    def __str__(self):
+        return f"Patient({self.name}, {self.DOB}, {self.visit_nums}, {self.recent_visit})"

@@ -5,26 +5,43 @@ from utils.common_models import CommonModel
 
 
 class Checkup(CommonModel):
+    checkup_id = models.IntegerField(primary_key=True)
+    
     patient = models.ForeignKey(
         Patient, on_delete=models.CASCADE, related_name='checkups', db_index=True
     )
     date = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"Checkup({self.patient}, {self.date})"
-
+        return f"Checkup({self.patient.name}, {self.date})"
 
 class OCTImage(CommonModel):
-    checkup_id = models.ForeignKey(
+    checkup = models.ForeignKey(
         Checkup,
         on_delete=models.SET_NULL,
         related_name='oct_images',
         null=True,
     )
-    image = models.ImageField(upload_to='patient_oct_images/')
+    img_path = models.ImageField(upload_to='patient_oct_images/')
     
+    def __str__(self):
+        return f"OCT Image({self.image})"
     
-class DiagnosisInfo(CommonModel):
+class CheckupMeta(CommonModel):
+    
+    class Eye_Side(models.TextChoices):
+        LEFT  = 'L', 'LEFT'
+        RIGHT = 'R', 'RIGHT'
+    
+    checkup = models.ForeignKey(
+        Checkup, on_delete=models.CASCADE, related_name='meta', db_index=True
+    )
+    eye_side = models.CharField(max_length=1, choices=Eye_Side, db_index=True)
+    
+    def __str__(self):
+        return f"{self.checkup.patient.name}, {self.eye_side}"
+    
+class Diagnosis(CommonModel):
     
     class Status(models.TextChoices):
         MODERATE_RISK = 'MR', 'MODERATE_RISK'
@@ -35,11 +52,16 @@ class DiagnosisInfo(CommonModel):
         DOCTOR = 'DR', 'DOCTOR'
         AI     = 'AI', 'AI'
         REVIEW = 'RV', 'REVIEW'
-
+    
+    diagnosis_id = models.IntegerField(primary_key=True)
     checkup = models.ForeignKey(
-        Checkup, on_delete=models.CASCADE, related_name='diagnoses', db_index=True
+        Checkup, on_delete=models.CASCADE, related_name='diagnosis', db_index=True
     )
     kind   = models.CharField(max_length=2, choices=Kind.choices, db_index=True)
     status = models.CharField(max_length=2, choices=Status.choices, db_index=True)
-    result = models.CharField(max_length=255, blank=True)
     classification = models.TextField(blank=True)
+    result = models.CharField(max_length=2048, blank=True)
+    result_summary = models.CharField(max_length=2048, blank=True)
+    
+    def __str__(self):
+        return f"Diagnosis({self.checkup.patient.name}, {self.kind}, {self.result})"
