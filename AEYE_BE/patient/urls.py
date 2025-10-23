@@ -5,6 +5,6 @@ from .views import PatientViewSet
 app_name = 'patient'
 
 router = DefaultRouter()
-router.register(r'', PatientViewSet, basename='patient')
 
+router.register('', PatientViewSet, basename=["patient"])
 urlpatterns = router.urls

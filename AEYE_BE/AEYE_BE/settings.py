@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'patient.apps.PatientConfig',
-    'diagnose.apps.DiagnoseConfig',
+    'diagnosis.apps.DiagnosisConfig',
     'ai.apps.AiConfig',
     'user.apps.UserConfig',
     'rest_framework',
