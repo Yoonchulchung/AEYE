@@ -74,7 +74,7 @@ class OCTImageWriteSerializer(serializers.ModelSerializer):
         checkup_instance = validated_data.pop('checkup_id')        
         patient_instance = validated_data.pop('patient_id')
         
-        ts = timezone.localtime().strftime("%Y%m%   d_%H%M%S")
+        ts = timezone.localtime().strftime("%Y%m%d_%H%M%S")
         base = f"{ts}_{patient_instance.id}_{checkup_instance.id}"
         ext = os.path.splitext(oct_img.name)[1].lower() or ".jpg"
         oct_img.name = f"{base}{ext}"

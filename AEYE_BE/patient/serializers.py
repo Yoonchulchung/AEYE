@@ -1,9 +1,53 @@
+import os
+
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Patient
 from diagnosis.serializer.read import CheckupReadSerializer
 
+from .models import Patient
 
+
+class PatientWriteSerializer(serializers.ModelSerializer):
+    '''
+    신규 환자를 추가합니다.
+    Request Body:
+    {
+        "name" : "환자 이름",
+        "DOB" : "환자 생일 (YY-MM-DD)",
+        "profile_image" : "환자 이미지",
+    }
+    '''
+    
+    class Meta:
+        model=Patient
+        fields=["name", "DOB", "profile_image"]
+
+    def validate_profile_image(self, value):
+        ext = os.path.splitext(value.name)[1]
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.dcm']
+        
+        if not ext.lower() in valid_extensions:
+            raise serializers.ValidationError("지원하지 않는 이미지 형식입니다. jpg, jpeg, png, dcm 파일만 업로드할 수 있습니다.")
+        return value
+    
+    @transaction.atomic
+    def create(self, validated_data):
+        name = validated_data.pop("name")
+        DOB = validated_data.pop("DOB")
+        profile_image = validated_data.pop("profile_image")
+        
+        ts = timezone.localtime().strftime("%Y%m%_d_%H%M%S")
+        base = f"{ts}_{name}"
+        ext = os.path.splitext(profile_image.name)[1].lower() or ".jpg"
+        profile_image.name = f"{base}{ext}"
+        
+        return Patient.objects.create(name=name,
+                                      DOB=DOB,
+                                      profile_image=profile_image)
+    
+    
 class PatientReadSerializer(serializers.ModelSerializer):
     '''
     환자의 정보만 조회할 수 있습니다.
@@ -21,7 +65,7 @@ class PatientReadSerializer(serializers.ModelSerializer):
     }
     '''
     
-    Patient_id = serializers.CharField(source='id')
+    patient_id = serializers.IntegerField(source='id')
     patient_name = serializers.CharField(source='name')
     
     class Meta:
@@ -77,7 +121,7 @@ class PatientReadAllSerializer(serializers.ModelSerializer):
     ai_version은 없을 수 있습니다.
     '''
     
-    Patient_id = serializers.CharField(source='id')
+    patient_id = serializers.CharField(source='id')
     patient_name = serializers.CharField(source='name')
     checkup = CheckupReadSerializer(read_only=True, many=True)
     

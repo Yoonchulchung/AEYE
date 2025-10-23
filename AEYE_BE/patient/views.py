@@ -1,60 +1,85 @@
-# from django.db import transaction
-# from rest_framework import status, viewsets
-# from rest_framework.response import Response
-# from rest_framework.decorators import action
+from django.db import transaction
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
-# from .models import Patient
-# from .serializers import PatientSaveSerializer, PatientSerializer
+from .models import Patient
+from diagnosis.models import Checkup
+from .serializers import PatientReadSerializer, PatientWriteSerializer, PatientReadAllSerializer
 
-
-# class PatientViewSet(viewsets.ModelViewSet):
-#     serializer_class = PatientSerializer
-
-#     def get_serializer_class(self):
-#         if self.action in ["create", "update", "partial_update"]:
-#             return PatientSaveSerializer
-#         return PatientSerializer
+class PatientViewSet(mixins.RetrieveModelMixin,
+                     mixins.ListModelMixin,
+                     mixins.CreateModelMixin,
+                     viewsets.GenericViewSet):
     
-#     def get_queryset(self):
-#         return (Patient.objects
-#                 .filter(db_status=True)                
-#                 .order_by('-recent_visit_date', '-id'))
+    queryset = Patient.objects.all()
+    serializer_class = PatientWriteSerializer
+    
+    def get_serializer_class(self):
+        if self.action in ("list", "retrieve"):
+            return PatientReadSerializer
+        return PatientWriteSerializer
+    
+    def retrieve(self, request, *args, **kwargs):
+        '''
+        특정 환자를 조회합니다.
+        '''
         
-#     @transaction.atomic
-#     def create(self, request, *args, **kwargs):
-
-#         serializer = PatientSaveSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-
-#         name = serializer.validated_data.get("name")
-#         dob = serializer.validated_data.get("DOB")
-
-#         patient, created = Patient.objects.get_or_create(
-#             name=name,
-#             DOB=dob,
-#         )
-
-#         if created:
-#             message = "Succeeded to save patient."
-#         else:
-#             message = "Patient is already registered."
+        patient = self.get_object()
+        serializer = self.get_serializer(patient)
+        return Response(serializer.data)
+        
+    def list(self, request, *args, **kwargs):
+        '''
+        모든 환자를 조회합니다.
+        '''
+        
+        qs = self.get_queryset()
+        ser = self.get_serializer(qs, many=True)
+        return Response(ser.data)
+        
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        '''
+        신규 환자를 추가합니다.
+        
+        Request Body :
+        {
+            "name" : "환자 이름",
+            "DOB" : "환자 생일 (YY-MM-DD)",
+            "profile_image" : "환자 이미지 URL",
+        }
+        '''
+        
+        try:
+            patient_serializer = PatientWriteSerializer(data=request.data)
+            patient_serializer.is_valid(raise_exception=True)
+            patient_serializer.save()
             
-#         headers = self.get_success_headers(serializer.data)
-#         return Response(
-#             {'message' : message},
-#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-#             headers=headers
-#         )
+            payload = {
+                "status" : "SUCCESS"
+            }
+        except Exception as e:
+            payload = {
+                "status" : "ERROR",
+                "message" : str(e),
+            }
 
-#     @action(detail=True, methods=['get'], url_path='diagnoses')
-#     def diagnoses(self, request, pk=None):
-#         from diagnosis.models import DiagnosisInfo
-#         qs = (DiagnosisInfo.objects
-#               .filter(checkup__patient_id=pk)
-#               .select_related("checkup", "checkup__patient")
-#               .order_by("-created_at"))
-#         page = self.paginate_queryset(qs)
-#         from BE_AEYE.AEYE_BE.diagnosis.serializer.serializers import DiagnosisFlatSerializer
-#         if page is not None:
-#             return self.get_paginated_response(DiagnosisFlatSerializer(page, many=True).data)
-#         return Response(DiagnosisFlatSerializer(qs, many=True).data)
+        return Response(data=payload, status=status.HTTP_202_ACCEPTED)
+
+    @action(detail=True, methods=['get'], url_path='checkup')
+    def checkups(self, request, pk=None):
+        '''
+        특정 환자 진단 결과 조회
+        '''
+            
+        queryset = Patient.objects.filter(pk=pk).prefetch_related(
+            'checkup',
+            'checkup__oct_image',
+            'checkup__meta',
+            'checkup__diagnosis'
+        ).order_by('-created_at')
+        
+        serializer = PatientReadAllSerializer(queryset, many=True)
+        
+        return Response(serializer.data)

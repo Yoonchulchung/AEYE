@@ -7,7 +7,7 @@ from utils.common_models import CommonModel
 class Checkup(CommonModel):
     
     patient = models.ForeignKey(
-        Patient, on_delete=models.CASCADE, related_name='checkups', db_index=True
+        Patient, on_delete=models.CASCADE, related_name='checkup', db_index=True
     )
     date = models.DateField(auto_now_add=True)
 
@@ -18,7 +18,7 @@ class OCTImage(CommonModel):
     checkup = models.ForeignKey(
         Checkup,
         on_delete=models.SET_NULL,
-        related_name='oct_images',
+        related_name='oct_image',
         null=True,
     )
     oct_img = models.ImageField(upload_to='patient_oct_images/')
@@ -55,6 +55,7 @@ class Diagnosis(CommonModel):
     checkup = models.ForeignKey(
         Checkup, on_delete=models.CASCADE, related_name='diagnosis', db_index=True
     )
+    date   = models.DateTimeField(auto_now=True)
     kind   = models.CharField(max_length=2, choices=Kind.choices, db_index=True)
     status = models.CharField(max_length=2, choices=Status.choices, db_index=True)
     classification = models.TextField(blank=True)

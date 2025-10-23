@@ -77,10 +77,11 @@ class CheckupReadSerializer(serializers.ModelSerializer):
 
     위 결과에서 ai_version은 존재하지 않을 수 있습니다.
     '''
-    patient_name = serializers.CharField()
-    diagnosis = DiagnosisSerializer(many=True, read_only=True)
+    checkup_id = serializers.IntegerField(source='id')
+    patient_name = serializers.CharField(source='patient.name')
     oct_image = OCTImageSerializer(many=True, read_only=True)
     meta = CheckupMetaSerializer(many=True, read_only=True)
+    diagnosis = DiagnosisSerializer(many=True, read_only=True)
     
     class Meta:
         model=Checkup
