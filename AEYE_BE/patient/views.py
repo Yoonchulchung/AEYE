@@ -4,7 +4,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models import Patient
-from diagnosis.models import Checkup
 from .serializers import PatientReadSerializer, PatientWriteSerializer, PatientReadAllSerializer
 
 class PatientViewSet(mixins.RetrieveModelMixin,
@@ -77,7 +76,8 @@ class PatientViewSet(mixins.RetrieveModelMixin,
             'checkup',
             'checkup__oct_image',
             'checkup__meta',
-            'checkup__diagnosis'
+            'checkup__diagnosis',
+            'checkup__diagnosis__ai_version',
         ).order_by('-created_at')
         
         serializer = PatientReadAllSerializer(queryset, many=True)

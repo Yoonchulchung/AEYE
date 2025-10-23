@@ -81,7 +81,7 @@ class CheckupReadSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.name')
     oct_image = OCTImageSerializer(many=True, read_only=True)
     meta = CheckupMetaSerializer(many=True, read_only=True)
-    diagnosis = DiagnosisSerializer(many=True, read_only=True)
+    diagnosis = DiagnosisReadSerializer(many=True, read_only=True)
     
     class Meta:
         model=Checkup
