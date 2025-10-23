@@ -47,6 +47,7 @@ class DiagnosisReadSerializer(serializers.ModelSerializer):
 
 class CheckupReadSerializer(serializers.ModelSerializer):
     '''
+    
     Response Body:
     {
         "checkup_id": "진료 ID",

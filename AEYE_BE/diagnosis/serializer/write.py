@@ -14,6 +14,11 @@ from ..models import Checkup, CheckupMeta, Diagnosis, OCTImage
 class CheckupNewWriteSerializer(serializers.ModelSerializer):
     '''
     새로운 환자 진료 기록을 추가합니다.
+    
+    Request Body:
+    {
+        "patient_id" : "환자 ID"
+    }
     '''
     patient_id = serializers.PrimaryKeyRelatedField(queryset=Patient.objects.all())
 
@@ -35,6 +40,17 @@ class OCTImageWriteSerializer(serializers.ModelSerializer):
     '''
     진료 기록의 OCT 이미지를 기록합니다. 환자가 중복되어서 데이터가 저장될 수 있기 떄문에
     환자 ID를 입력받아 image path에 함께 저장합니다. 
+    
+    Checkup DB -> OCTImage DB
+    
+    Checkup DB를 먼저 저장하고, OCTImage DB에 저장해야 합니다.
+    
+    Request Body:
+    {
+        "oct_img" : "[jpg, jpeg, png, dcm] 포맷만 허용됩니다."
+        "checkup_id" : "Checkup DB에서 할당 받은 진료 ID"
+        "patient_id" : "클라이언트가 입력한 환자 ID"
+    }
     '''
     patient_id = serializers.PrimaryKeyRelatedField(queryset=Patient.objects.all())
     checkup_id = serializers.PrimaryKeyRelatedField(queryset=Checkup.objects.all())
@@ -82,6 +98,20 @@ class CheckupMetaWriteSerializer(serializers.ModelSerializer):
 class DiagnosisAIWriteSerializer(serializers.ModelSerializer):
     '''
     AI 진단 이후 진단 정보를 기록합니다.
+    
+    Checkup DB -> Diagnosis DB
+    
+    Checkup DB를 먼저 저장하고, Diagnosis DB를 저장합니다.
+    
+    Request Body:
+    {
+        "checkup_id" : "진료 ID",
+        "kind" : "['AI', 'DR', 'RE'] 중 하나만 선택",
+        "status" : "['MR', 'LR', 'HR'] 중 하나만 선택",
+        "classification" : "병 이름",
+        "result" : "진단 결과",
+        "reuslt_summary" : "진단 결과 요약"
+    }
     '''
     checkup_id = serializers.PrimaryKeyRelatedField(queryset=Checkup.objects.all()) 
        
@@ -112,5 +142,40 @@ class DiagnosisAIWriteSerializer(serializers.ModelSerializer):
             llm_model_name="OpenAI",
             llm_model_weight="GPT-4o",
         )
+        
+        return diagnosis_instance
+    
+    
+class DiagnosisDoctorNewWriteSerializer(serializers.ModelSerializer):
+    '''
+    신규 환자의 의사 진단을 기록합니다.
+    
+    Checkup DB -> Diagnosis DB
+    
+    Checkup DB를 먼저 저장하고, Diagnosis DB를 저장합니다.
+    
+    Request Body:
+    {
+        "checkup_id" : "진료 ID",
+        "kind" : "['AI', 'DR', 'RE'] 중 하나만 선택",
+        "status" : "['MR', 'LR', 'HR'] 중 하나만 선택",
+        "classification" : "병 이름",
+        "result" : "진단 결과",
+    }
+    '''
+    checkup_id = serializers.PrimaryKeyRelatedField(queryset=Checkup.objects.all()) 
+       
+    class Meta:
+        model  = Diagnosis
+        fields = ["checkup_id", "kind", "status", "classification",
+                  "result"]
+    
+    @transaction.atomic
+    def create(self, validated_data):
+        
+        checkup_instance = validated_data.pop("checkup_id")
+        diagnosis_instance = Diagnosis.objects.create(
+            checkup=checkup_instance,
+            **validated_data)
         
         return diagnosis_instance
