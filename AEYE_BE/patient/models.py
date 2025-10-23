@@ -7,7 +7,7 @@ class Patient(CommonModel):
     
     name = models.CharField(max_length=30)
     DOB = models.DateField()
-    profile_image = models.ImageField("patient_image/")
+    profile_image = models.ImageField(upload_to='patient_image/')
     visit_nums = models.IntegerField(default=1)
     recent_visit = models.DateField(auto_now_add=True)
     severity_percentage = models.IntegerField(default=0)

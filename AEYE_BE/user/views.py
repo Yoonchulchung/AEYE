@@ -1,10 +1,10 @@
-from django.shortcuts import render
 from django.db import transaction
-
+from django.shortcuts import render
 from rest_framework import mixins, status, viewsets
+from rest_framework.response import Response
+
 from .models import User
 from .serializers import UserReadSerializer, UserWriteSerializer
-from rest_framework.response import Response
 
 
 class UserViewSet(mixins.RetrieveModelMixin,

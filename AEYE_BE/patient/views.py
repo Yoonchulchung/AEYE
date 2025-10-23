@@ -4,7 +4,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models import Patient
-from .serializers import PatientReadSerializer, PatientWriteSerializer, PatientReadAllSerializer
+from .serializers import (PatientReadAllSerializer, PatientReadSerializer,
+                          PatientWriteSerializer)
+
 
 class PatientViewSet(mixins.RetrieveModelMixin,
                      mixins.ListModelMixin,

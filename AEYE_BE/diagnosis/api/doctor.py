@@ -21,16 +21,6 @@ class DoctorDiagnosis(mixins.CreateModelMixin,
     
     '''
     
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        
-        self.ai_diagnosis_url = "http://0.0.0.0:2000/api/v1/inference"
-        self.headers = {
-            'Content-Type': 'application/octet-stream'
-        }
-        self.timeout_s = 5
-    
-    
 class DiagnosisDoctorViewSet(DoctorDiagnosis):
 
     serializer_class = DiagnosisDoctorRequestSerializer
