@@ -1,31 +1,48 @@
 import os
+import re
 from abc import ABC, abstractmethod
 from typing import Callable, List
 
 from langchain.text_splitter import SpacyTextSplitter
+from langchain_community.document_loaders import PyMuPDFLoader, UnstructuredPDFLoader
 from langchain_core.documents import Document
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_postgres.vectorstores import PGVector
-import requests
 
-from bs4 import BeautifulSoup
 
 class AEYE_Langchain_Insert(ABC):
     '''
     Vectorstore DB에 저장할 PDF 문서 처리를 관리합니다. 
     
     아래와 같은 파이프라인으로 문서를 처리합니다.
-    PDF 로드 -> PDF 전처리 -> 텍스트 추출 -> 텍스트 전처리 -> 청크 분할 -> DB 저장
+    PDF 전처리 -> 텍스트 추출 -> 텍스트 전처리 -> 청크 분할 -> DB 저장
     
     '''
     
     @abstractmethod
-    def _get_documents_from_pdf(self, pdf_path : str) -> List[Document]:
+    def _preprocess_pdf(self, pdf_path):
         '''
+        PDF 파일을 전처리합니다. PDF를 파싱하기 전 가벼운 PDF 파서 모델을 이용하여
+        전처리를 진행합니다.
+        
         먼저, PDF가 이미지 기반인지 확인합니다. OCR 사용 여부를 체크합니다.
         
+        LLM 모델을 이용하여 파싱된 PDF 파일에서 아래와 같은 정보를 추출합니다.
+        문서의 첫 페이지만을 이용합니다.
+        - PDF 문서의 제목
+        - PDF 문서의 카테고리
+        - PDF 문서가 논문이라면, 저자명을 추출합니다.
+        
+        정갈된 전처리를 위해 추출된 PDF 제목을 파일 명으로 변경합니다.
+        ex :) Attention_is_all_you_need.pdf
+        '''
+        raise NotImplementedError
+    
+    @abstractmethod
+    def _get_text_from_pdf(self, pdf_path):
+        '''
         PDF에서 텍스트를 추출합니다.
         
         표와 이미지를 따로 추출하여 관리합니다. 추출한 자리는 흔적을 남깁니다.
@@ -41,29 +58,7 @@ class AEYE_Langchain_Insert(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def _preprocess_pdf(self, pdf_path : str) -> str:
-        '''
-    
-        LLM 모델을 이용하여 파싱된 PDF 파일에서 아래와 같은 정보를 추출합니다.
-        문서의 abstract만 이용해 키워드와 카테고리를 추출합니다.
-
-        {
-            "title": 문서의 제목,
-            "authors": [문서의 저자명],
-            "published": 문서 발행 일자,
-            "language": 문서 언어,
-            "category": 문서의 카테고리,
-            "keywords": 문서 키워드,
-        }
-        
-        정갈된 전처리를 위해 추출된 PDF 제목을 파일 명으로 변경합니다.
-        ex :) Attention_is_all_you_need.pdf
-        '''
-        raise NotImplementedError
-    
-    
-    @abstractmethod
-    def _preprocess_text(self, texts : str, mode : str) -> str:
+    def _preprocess_text(self, txt):
         '''
         RAG 검색에 성능을 하락시키는 불필요한 내용을 제거하고 변경합니다.
         
@@ -108,32 +103,32 @@ class AEYE_Langchain_Insert(ABC):
             raise ValueError(f"Wrong path : {pdf_path}")
         
         self.logger(f"adding {pdf_path} to pgvector...")
-        soup = self._get_documents_from_pdf(pdf_path)
-        metadata = self._preprocess_pdf(pdf_path, soup)        
-        text = self._preprocess_text(soup)
+        pdf_path = self._preprocess_pdf(pdf_path)
         
-        
+        # pdf_chunk = self._get_text_from_pdf(pdf_path)
+        # text = self._preprocess_text(pdf_chunk, pdf_author)        
         #chunks = self._get_chunk(text)
         #self._insert_to_database(text)
         
         #self.logger(f"succeed to add {pdf_path}")
 
-class Langchain_Insert_Paper(AEYE_Langchain_Insert):
+class Langchain_Insert(AEYE_Langchain_Insert):
     preprocess_pdf_prompt = """
     You are an expert academic researcher skilled at parsing document information.
-    Your task is to extract the main category and keywords from the text of the first page of a research paper provided below.
+    Your task is to extract the main title, all authors, and category from the text of the first page of a research paper provided below.
 
     Follow these rules carefully:
-    1. categorize the given document text into a single word. 
-    2. Extract keywords that describes the given document text well. There should be five keywords.
-    3. Format your response as a valid JSON object with three keys: "category" and "keywords".
-    4. The value for "category" must be a string and lowercase.
-    5. The value for "keywords" must be a list of strings and lowercase.
+    1. The title is usually the largest, most prominent text at the top.
+    2. Extract all author names. If there are multiple authors, include all of them.
+    3. Format your response as a valid JSON object with three keys: "title", "authors", and "category".
+    4. The value for "title" must be a string and lowercase.
+    5. The value for "authors" must be a list of strings. If no authors are found, return an empty list [].
+    7. The value for "category" mus be a string.
     6. Do NOT add any introductory text, explanations, or markdown formatting like ```json. Your response must be ONLY the raw JSON object.
     
     ---
     DOCUMENT TEXT:
-    {abstract}
+    {first_page_text}
     ---
 
     JSON OUTPUT:
@@ -150,69 +145,94 @@ class Langchain_Insert_Paper(AEYE_Langchain_Insert):
         
         self.splitter = SpacyTextSplitter(chunk_size=chunk_size,
                                           chunk_overlap=chunk_overlap)
+        self.loader = UnstructuredPDFLoader
+        self.simple_loader = PyMuPDFLoader
         
         #llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
-        self.llm = ChatOllama(model="llama3", temperature=0)
+        self.llm = ChatOllama(model="llama3",
+                              temperature=0)
         
         self.vs = vs
         self.logger = logger
-                
-        self.GROBID_URL = "http://localhost:8070/api/processFulltextDocument"
-
-
-    def _get_documents_from_pdf(self, pdf_path : str) -> BeautifulSoup:
         
-        with open(pdf_path, "rb") as f:
-            response = requests.post(self.GROBID_URL, files={"input": f})        
-        return BeautifulSoup(response.text, "xml")
-
-    
-    def _preprocess_pdf(self, pdf_path : str, soup : BeautifulSoup) -> dict:
+        self.title = None
+        self.author = None
+        self.cateogy = None
         
-        title = soup.find("title").get_text(strip=True)
         
-        analytic = soup.find("analytic")
-        authors = analytic.find_all("author")
+    def _preprocess_pdf(self, pdf_path) -> str:
         
-        names = []
-        for author in authors:
-            pers = author.find("persName")
-            if pers:
-                forenames = [f.get_text(strip=True) for f in pers.find_all("forename")]
-                surname = pers.find("surname")
-                surname_text = surname.get_text(strip=True) if surname else ""
-                full_name = " ".join(forenames + [surname_text])
-                names.append(full_name)
+        loader = self.simple_loader(pdf_path, mode="page")
+        documents = loader.load()
+        
+        metadata = documents[0].metadata
+        pdf_title = metadata.get('title')
+        pdf_author = metadata.get('author')
+        pdf_category = metadata.get('category')
+        
+        first_page_text = self._preprocess_text(documents[0].page_content, "PyMu")
+        
+        if not pdf_title and not pdf_author and not pdf_category:
+            
+            parser = JsonOutputParser()
+            prompt = ChatPromptTemplate.from_template(template=self.preprocess_pdf_prompt)
+            
+            chain = prompt | self.llm | parser
+            result = chain.invoke({"first_page_text": first_page_text})
+            
+            pdf_title = result["title"]
+            pdf_author = result["authors"]
+            pdf_category = result["category"]  
+        
+        self.title = pdf_title
+        self.author = pdf_author
+        self.cateogy = pdf_category
 
         directory = os.path.dirname(pdf_path)
-        new_filename = title.replace(" ", "_").lower()
+        new_filename = pdf_title.replace(" ", "_")
         
         new_path = os.path.join(directory, new_filename) + ".pdf"
         os.rename(pdf_path, new_path)
         
-        published = soup.find("publicationStmt").find("date").get("when")
-        lang = soup.find("text").get("xml:lang")
+        return new_path
+            
+    def _get_text_from_pdf(self, pdf_path) -> List[Document]:
         
-        abstract = soup.find("abstract").get_text(strip=True)
-                
-        parser = JsonOutputParser()
-        prompt = ChatPromptTemplate.from_template(template=self.preprocess_pdf_prompt)
+        loader = self.loader(pdf_path, 
+                             mode="paged", 
+                             strategy="hi_res")
         
-        chain = prompt | self.llm | parser
-        result = chain.invoke({"abstract": abstract})
+        pdf_file = loader.load()
+    
+        return pdf_file
+    
+    def _preprocess_text(self, texts, mode):
         
-        return {
-            "title": title,
-            "authors": names,
-            "published": published,
-            "language": lang,
-            "category": result["category"],
-            "keywords": result["keywords"],
-        }
+        # 문장 중간의 불필요한 줄바꿈을 공백으로 변환
+        if mode == "PyMu":
+            texts = re.sub(r'\n(?!\n)', ' ', texts)
+        else:
+            texts = re.sub(r'\n\n(?!\n\n)', ' ', texts)
+
+        # 여러 개의 공백을 하나로 축소
+        texts = re.sub(r' +', ' ', texts)
+
+        # 페이지 번호 제거
+        lines = texts.strip().split('\n')
+        if lines[0].strip().isdigit():
+            texts = '\n'.join(lines[1:])
         
-    def _preprocess_text(self, soup : BeautifulSoup) -> str:
+        if lines[-1].strip().isdigit():
+            texts = '\n'.join(lines[:-1])
         
-        texts = soup.find("body").get_text(strip=True)
+        pattern = r'^\s*[-~]?\s*p?\.?\s*\d+\s*[-~]?\s*$'
+        if re.fullmatch(pattern, lines[0].strip(), re.IGNORECASE):
+            texts = lines[1:]
+        
+        # 테이블인 경우
+        
+        # 이미지인 경우
+        
         return texts
         
     def _metadata(self, doc_metadata):
