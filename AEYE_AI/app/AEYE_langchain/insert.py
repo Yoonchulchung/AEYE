@@ -149,14 +149,13 @@ class Langchain_Insert(AEYE_Langchain_Insert):
         self.simple_loader = PyMuPDFLoader
         
         #llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
-        self.llm = ChatOllama(
-            model="llama3",
-            temperature=0,
-            )
+        self.llm = ChatOllama(model="llama3",
+                              temperature=0)
         
         self.vs = vs
         self.logger = logger
         
+        self.title = None
         self.author = None
         self.cateogy = None
         
@@ -171,11 +170,9 @@ class Langchain_Insert(AEYE_Langchain_Insert):
         pdf_author = metadata.get('author')
         pdf_category = metadata.get('category')
         
-        first_page = self._preprocess_text(documents[0].page_content, "PyMu")
+        first_page_text = self._preprocess_text(documents[0].page_content, "PyMu")
         
-        if not pdf_title and not pdf_author:
-            
-            first_page_text = first_page
+        if not pdf_title and not pdf_author and not pdf_category:
             
             parser = JsonOutputParser()
             prompt = ChatPromptTemplate.from_template(template=self.preprocess_pdf_prompt)
@@ -185,8 +182,9 @@ class Langchain_Insert(AEYE_Langchain_Insert):
             
             pdf_title = result["title"]
             pdf_author = result["authors"]
-            pdf_category = result["category"]    
+            pdf_category = result["category"]  
         
+        self.title = pdf_title
         self.author = pdf_author
         self.cateogy = pdf_category
 
