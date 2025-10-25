@@ -12,6 +12,10 @@ from langchain_postgres.vectorstores import PGVector
 import requests
 from tika import parser as TikaParser
 from bs4 import BeautifulSoup
+import psycopg
+from psycopg.rows import dict_row
+from settings import settings
+from .database import insert_paper, create_table
 
 class AEYE_Langchain_Insert(ABC):
     '''
@@ -24,13 +28,13 @@ class AEYE_Langchain_Insert(ABC):
     @abstractmethod
     def _preprocess_pdf(self, pdf_path : str) -> dict:
         '''
-        먼저, PDF가 이미지 기반인지 확인합니다. OCR 사용 여부를 체크합니다.
         아래와 같은 메타 정보를 반환합니다.
 
         {
             "title": 문서의 제목,
             "authors": [문서의 저자명],
             "published": 문서 발행 일자,
+            "abstract": 문서 요약문,
             "language": 문서 언어,
             "category": 문서의 카테고리,
             "keywords": 문서 키워드,
@@ -54,7 +58,6 @@ class AEYE_Langchain_Insert(ABC):
         
         Reference는 별도의 메타데이터에 분리합니다. Reference는 검색 정확도를
         하락시킬 수 있습니다.
-        
         '''
         raise NotImplementedError
     
@@ -77,7 +80,6 @@ class AEYE_Langchain_Insert(ABC):
             'keywords': '청크의 주제나 핵심 내용을 나타내는 키워드'
         }
         '''
-        
         raise NotImplementedError
     
     @abstractmethod
@@ -94,8 +96,6 @@ class AEYE_Langchain_Insert(ABC):
         '''
         raise NotImplementedError
     
-    
-    
     def add_pdf(self, pdf_path : str):
         
         if not os.path.exists(pdf_path):
@@ -105,12 +105,11 @@ class AEYE_Langchain_Insert(ABC):
             return
         
         self.logger(f"adding {pdf_path} to pgvector...")
-        metadata = self._preprocess_pdf(pdf_path)
-        # soup = self._get_documents_from_pdf(pdf_path)
-        # text = self._preprocess_text(soup)
-    
-        # chunks = self._get_chunk(soup)
-        #self._insert_to_database(text)
+        metadata, new_path = self._preprocess_pdf(pdf_path)
+        sections = self._get_documents_from_pdf(new_path)
+        text = self._preprocess_text(sections, new_path)
+        # chunks = self._get_chunk(text)
+        # self._insert_to_database(text)
         
         #self.logger(f"succeed to add {pdf_path}")
 
@@ -191,6 +190,12 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         self.llm = ChatOllama(model="llama3", temperature=0)
         self.string_parser = JsonOutputParser()
 
+        self.name_prompt_temp = ChatPromptTemplate.from_template(template=self.name_prompt)
+        self.name_chain = self.name_prompt_temp | self.llm | self.string_parser
+                
+        self.pdf_prompt = ChatPromptTemplate.from_template(template=self.preprocess_pdf_prompt)
+        self.result_chain = self.pdf_prompt | self.llm | self.string_parser
+        
         self.vs = vs
         self.logger = logger
         
@@ -205,6 +210,7 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         
         with open(pdf_path, "rb") as f:
             response = requests.post(self.GROID_HEADER_URL, files={"input": f})
+            response.raise_for_status()
         
         soup = BeautifulSoup(response.text, "xml")
         title = soup.find("title").get_text(strip=True)
@@ -225,91 +231,114 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         lang = soup.find("text").get("xml:lang")
         abstract = soup.find("abstract").get_text(strip=True)
                 
-        def _save_renamed_file(pdf_path, soup):
+        def _save_renamed_file(pdf_path : str, title : str):
+                        
+            if len(title) > 50:
+                name = self.name_chain.invoke({"abstract": abstract, "title": title})
+                title = str(name["title"])
             
-            directory = os.path.dirname(pdf_path)
             new_filename = title.replace(" ", "_").lower()
             
-            if len(new_filename) > 10:
-                prompt = ChatPromptTemplate.from_template(template=self.name_prompt)
-                chain = prompt | self.llm | self.string_parser
-                name = chain.invoke({"abstract": abstract,"title" : new_filename})
-                new_filename = name["title"]
-            
-            new_path = os.path.join(directory, new_filename)
-            new_pdf_path = new_path + ".pdf"
-            
+            directory = os.path.dirname(pdf_path)
+            new_pdf_path = os.path.join(directory, new_filename) + ".pdf"
             os.rename(pdf_path, new_pdf_path)
         
-            return new_path
+            return new_pdf_path
         
-        new_path = _save_renamed_file(pdf_path, soup)
-        prompt = ChatPromptTemplate.from_template(template=self.preprocess_pdf_prompt)
-        chain = prompt | self.llm | self.string_parser
-        result = chain.invoke({"abstract": abstract})
+        new_path = _save_renamed_file(pdf_path, title)
+        result = self.result_chain.invoke({"abstract": abstract})
         
-        payload = {
-            "title": title,
-            "authors": names,
-            "published": metadata["pdf:docinfo:created"],
-            "language": lang,
-            "category": result["category"],
-            "keywords": result["keywords"],
-        }
+        payload = { 
+                    "title": title,
+                    "authors": names,
+                    "published": metadata["pdf:docinfo:created"],
+                    "language": lang,
+                    "category": result["category"],
+                    "keywords": result["keywords"],
+                  }
         
-        def _save_meta_info(new_path, payload):
+        def _save_meta_info(new_path : str, payload):
             
-            new_path_meta = new_path + "_meta.md"
-
+            root, ext = os.path.splitext(new_path)
+            new_path_meta = root + "_meta.md"
             with open(new_path_meta, "w") as w:
                 w.write(str(payload))
         
         _save_meta_info(new_path, payload)
         
-        return payload
+        return payload, new_path
     
     
-    def _get_documents_from_pdf(self, pdf_path : str) -> BeautifulSoup:
+    def _get_documents_from_pdf(self, pdf_path : str) -> str:
         
         with open(pdf_path, "rb") as f:
-            response = requests.post(self.GROBID_FULL_URL, files={"input": f})        
-            
+            response = requests.post(self.GROBID_FULL_URL, files={"input": f})
+            response.raise_for_status()
+                
         soup = BeautifulSoup(response.text, "xml")
+        body = soup.find("text").find("body") if soup.find("text") else None
         
+        sections = []
+        if body:
+            for div in body.find_all("div", recursive=False):
+                head = div.find("head")
+                sec_title = head.text.strip() if head else ""
+                
+                sec_text = " ".join(div.stripped_strings)
+                sections.append({"title" : sec_title, "text" : sec_text})
         
-        
-        return soup
+        return sections
     
         
-    def _preprocess_text(self, soup : BeautifulSoup) -> str:
+    def _preprocess_text(self, sections_list : list, pdf_path : str) -> list:
         
-        texts = soup.find("body").get_text(strip=True)
-        return texts
+        sections = []
+        for paragraph in sections_list:
+            sec_title = paragraph["title"]
+            sec_text = paragraph["text"]
+            
+            # Reference [1, 2] 형태 제거
+            sec_text = re.sub(r'\[[\d,\s]+\]', '', sec_text)
+            # Fig, Table, Fig 제거
+            pattern = re.compile(r'(?:Figure|Fig|Table)s?\.?\s*[\d\s,-]+', re.IGNORECASE)
+            sec_text = pattern.sub('', sec_text)
+            
+            sec_text = sec_text.replace(sec_title, '', 1).strip()
+            sections.append({"title" : sec_title, "text" : sec_text})
         
-    def _metadata(self, doc_metadata):
-        metadata={
-            'source': doc_metadata["source"],
-            'page': doc_metadata["page_number"],
-            'title': doc_metadata["filename"],
-            'language' : doc_metadata["languages"],
-            'author': self.author, 
-            'published_date': '문서가 생성된 날짜와 시간',
-            'keywords': '문서의 주제나 핵심 내용을 나타내는 키워드'
-        }
+        def save_body_text():    
+            body_text = "\n\n".join(
+                [f"{s['title']}\n{s['text']}" if s['title'] else s['text'] for s in sections]
+            ).strip()
+            
+            new_md = os.path.dirname(pdf_path) + "/" + os.path.basename(pdf_path).split(".")[0] + "__.md"
+            with open(new_md, "w") as w:
+                w.write(str(body_text))    
+        save_body_text()
         
-        return metadata
+        return sections
         
-    def _get_chunk(self, soup : BeautifulSoup):
-        context_chunks = []
+    
+    def _get_chunk(self, body_text):
+        ...
         
-        sections = soup.find("body")
+        
                     
     def _insert_to_database(self, context_chunks, ) -> None:
         
+        sql = """
+        INSERT INTO papers (title, abstract, body_text, authors, metadata)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING id;
+        """
+    
+    
         docs = [
             Document(page_content=text, metadata=...)
             for i, text in enumerate(context_chunks)
         ]
         
         
-        self.vs.add_documents(docs)
+        with psycopg.connect(settings.PG_CONN_STR) as conn:
+            create_table(conn, ...)
+            insert_paper(conn, ...)
