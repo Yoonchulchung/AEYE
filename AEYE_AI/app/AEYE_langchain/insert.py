@@ -1,21 +1,22 @@
-import re
 import os
+import re
 from abc import ABC, abstractmethod
-from typing import Callable, List
+from typing import Callable
 
+import requests
+from bs4 import BeautifulSoup
 from langchain.text_splitter import SpacyTextSplitter
-from langchain_core.documents import Document
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
-from langchain_postgres.vectorstores import PGVector
-import requests
+from langchain.docstore.document import Document
 from tika import parser as TikaParser
-from bs4 import BeautifulSoup
-import psycopg
-from psycopg.rows import dict_row
-from settings import settings
-from .database import insert_paper, create_table
+
+from database import connection_pool
+from langchain_community.embeddings import SentenceTransformerEmbeddings
+
+from .query import create_table, insert_paper, insert_paper_chunk
+
 
 class AEYE_Langchain_Insert(ABC):
     '''
@@ -83,7 +84,7 @@ class AEYE_Langchain_Insert(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def _get_chunk(self, text):
+    def _get_chunks(self, text):
         '''
         
         '''
@@ -108,10 +109,9 @@ class AEYE_Langchain_Insert(ABC):
         metadata, new_path = self._preprocess_pdf(pdf_path)
         sections = self._get_documents_from_pdf(new_path)
         text = self._preprocess_text(sections, new_path)
-        # chunks = self._get_chunk(text)
-        # self._insert_to_database(text)
-        
-        #self.logger(f"succeed to add {pdf_path}")
+        chunks = self._get_chunks(text)
+        self._insert_to_database(metadata, chunks)
+        self.logger(f"succeed to add {pdf_path}")
 
 class Grobid_Insert_Paper(AEYE_Langchain_Insert):
     preprocess_pdf_prompt = """
@@ -177,7 +177,6 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
     
     def __init__(
         self, 
-        vs : PGVector, 
         chunk_size : int = 1000, 
         chunk_overlap : int = 100,
         logger : Callable = None
@@ -188,25 +187,41 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         
         #llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
         self.llm = ChatOllama(model="llama3", temperature=0)
-        self.string_parser = JsonOutputParser()
+        self.output_parser = JsonOutputParser()
 
         self.name_prompt_temp = ChatPromptTemplate.from_template(template=self.name_prompt)
-        self.name_chain = self.name_prompt_temp | self.llm | self.string_parser
+        self.name_chain = self.name_prompt_temp | self.llm | self.output_parser
                 
         self.pdf_prompt = ChatPromptTemplate.from_template(template=self.preprocess_pdf_prompt)
-        self.result_chain = self.pdf_prompt | self.llm | self.string_parser
+        self.result_chain = self.pdf_prompt | self.llm | self.output_parser
         
-        self.vs = vs
         self.logger = logger
         
         self.GROID_HEADER_URL = "http://localhost:8070/api/processHeaderDocument"
         self.GROBID_FULL_URL = "http://localhost:8070/api/processFulltextDocument"
 
+        conn = None
+        try:
+            conn = connection_pool.getconn()
+            create_table(conn)
+            conn.commit()
+        
+        except Exception as e:
+            conn.rollback()
+            print(f"Something wrong while creating table : {e}")
+            
+        finally:
+            if conn:
+                connection_pool.putconn(conn)
+
+        self.embedding_model = SentenceTransformerEmbeddings(
+                                    model_name="intfloat/multilingual-e5-base"
+                                )
 
     def _preprocess_pdf(self, pdf_path : str) -> dict:
         
         parsed = TikaParser.from_file(pdf_path)
-        metadata = parsed["metadata"]
+        metadata = parsed['metadata']
         
         with open(pdf_path, "rb") as f:
             response = requests.post(self.GROID_HEADER_URL, files={"input": f})
@@ -234,8 +249,8 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         def _save_renamed_file(pdf_path : str, title : str):
                         
             if len(title) > 50:
-                name = self.name_chain.invoke({"abstract": abstract, "title": title})
-                title = str(name["title"])
+                name = self.name_chain.invoke({'abstract': abstract, 'title': title})
+                title = str(name['title'])
             
             new_filename = title.replace(" ", "_").lower()
             
@@ -251,10 +266,11 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         payload = { 
                     "title": title,
                     "authors": names,
+                    "abstract": abstract,
                     "published": metadata["pdf:docinfo:created"],
                     "language": lang,
-                    "category": result["category"],
-                    "keywords": result["keywords"],
+                    "category": result['category'],
+                    "keywords": result['keywords'],
                   }
         
         def _save_meta_info(new_path : str, payload):
@@ -294,13 +310,13 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         
         sections = []
         for paragraph in sections_list:
-            sec_title = paragraph["title"]
-            sec_text = paragraph["text"]
+            sec_title = paragraph['title']
+            sec_text = paragraph['text']
             
             # Reference [1, 2] 형태 제거
             sec_text = re.sub(r'\[[\d,\s]+\]', '', sec_text)
-            # Fig, Table, Fig 제거
-            pattern = re.compile(r'(?:Figure|Fig|Table)s?\.?\s*[\d\s,-]+', re.IGNORECASE)
+            # Fig, Table, Fig, Appendix 제거
+            pattern = re.compile(r'(?:Figure|Fig|Table|Appendix)s?\.?\s*[\d\s,-]+', re.IGNORECASE)
             sec_text = pattern.sub('', sec_text)
             
             sec_text = sec_text.replace(sec_title, '', 1).strip()
@@ -319,26 +335,99 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         return sections
         
     
-    def _get_chunk(self, body_text):
-        ...
+    def _get_chunks(self, sections):
         
+        chunk_index_counter = 1
         
+        pre_embedding_chunks = []
+        chunk_contents = []
+        for section in sections:
+            original_text = section['text']
+            
+            doc = Document(
+                page_content=original_text,
+                metadata={
+                    'section_title': section['title']
+                }
+            )
+            split_chunks = self.splitter.split_documents([doc])
+
+            for chunk in split_chunks:
+                content = chunk.page_content            
+                char_start = original_text.find(content)
+                
+                if char_start == -1:
                     
-    def _insert_to_database(self, context_chunks, ) -> None:
+                    char_start = 0
+                    
+                char_end = char_start + len(content)
+                pre_embedding_chunks.append({
+                    "chunk_index": chunk_index_counter,
+                    "section_title": chunk.metadata['section_title'],
+                    "char_start": char_start,
+                    "char_end": char_end,
+                    "content": content
+                })
+                chunk_contents.append(content)
+                chunk_index_counter += 1
+        if chunk_contents:
+            embeddings = self.embedding_model.embed_documents(chunk_contents)
+        else:
+            return []
         
-        sql = """
-        INSERT INTO papers (title, abstract, body_text, authors, metadata)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING id;
-        """
-    
-    
-        docs = [
-            Document(page_content=text, metadata=...)
-            for i, text in enumerate(context_chunks)
-        ]
+        final_chunks = []
         
+        for chunk_data, embedding in zip(pre_embedding_chunks, embeddings):
+            chunk_tuple = (
+                chunk_data['chunk_index'],
+                chunk_data['section_title'],
+                chunk_data['char_start'],
+                chunk_data['char_end'],
+                chunk_data['content'],
+                embedding 
+            )
+            final_chunks.append(chunk_tuple)
+            
+        return final_chunks
+                    
+                    
+    def _insert_to_database(self, meta_data, context_chunks) -> None:
         
-        with psycopg.connect(settings.PG_CONN_STR) as conn:
-            create_table(conn, ...)
-            insert_paper(conn, ...)
+        conn = None
+        try:
+            conn = connection_pool.getconn()
+            paper_id = insert_paper(
+                conn, 
+                title=meta_data['title'],
+                authors=meta_data['authors'],
+                published=meta_data['published'],
+                abstract=meta_data['abstract'],
+                language=meta_data['language'],
+                keywords=meta_data['keywords'],
+                category=meta_data['category']
+            )
+            
+                
+            for chunk in context_chunks:
+                insert_paper_chunk(
+                    conn,
+                    paper_id=paper_id,
+                    chunk_index=chunk[0],
+                    section_title=chunk[1],
+                    char_start=chunk[2],
+                    char_end=chunk[3],
+                    content=chunk[4],
+                    embedding=chunk[5]
+                )
+            conn.commit()
+            
+        except Exception as e:
+            if conn:
+                conn.rollback()
+                print(f"Somethign wrong inserting to database : {e}")
+            
+            raise e
+            
+        finally:
+            if conn:
+                connection_pool.putconn(conn)
