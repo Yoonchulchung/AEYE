@@ -1,22 +1,24 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, Dict, List
 
 import requests
 from bs4 import BeautifulSoup
+from langchain.docstore.document import Document
 from langchain.text_splitter import SpacyTextSplitter
+from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
-from langchain.docstore.document import Document
 from tika import parser as TikaParser
 
-from database import connection_pool
-from langchain_community.embeddings import SentenceTransformerEmbeddings
+from AEYE_langchain.domain.insert import Paper
+from AEYE_langchain.infra.repository.insert import insert_paper_and_chunks
+from database import SessionLocal
 
-from .query import create_table, insert_paper, insert_paper_chunk
 from .prompt import name_prompt, preprocess_pdf_prompt
+
 
 class AEYE_Langchain_Insert(ABC):
     '''
@@ -27,7 +29,7 @@ class AEYE_Langchain_Insert(ABC):
     
     '''
     @abstractmethod
-    def _preprocess_pdf(self, pdf_path : str) -> dict:
+    def _preprocess_pdf(self, pdf_path : str) -> Dict:
         '''
         아래와 같은 메타 정보를 반환합니다.
 
@@ -47,7 +49,7 @@ class AEYE_Langchain_Insert(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def _get_documents_from_pdf(self, pdf_path : str) -> BeautifulSoup:
+    def _get_documents_from_pdf(self, pdf_path : str) -> str:
         '''
         PDF에서 텍스트를 추출합니다.
         
@@ -64,7 +66,7 @@ class AEYE_Langchain_Insert(ABC):
     
     
     @abstractmethod
-    def _preprocess_text(self, soup : BeautifulSoup) -> str:
+    def _preprocess_text(self, sections_list : List, pdf_path : str) -> List:
         '''
         RAG 검색에 성능을 하락시키는 불필요한 내용을 제거하고 변경합니다.
         
@@ -84,20 +86,27 @@ class AEYE_Langchain_Insert(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def _get_chunks(self, text):
+    def _get_chunks(self, sections : List) -> List:
         '''
-        
+        추출된 데이터에서 아래와 같이 청크 데이터를 만듭니다.
+        [
+            "chunk_index", 
+            "section_title",
+            "char_start",
+            "char_end",
+            "content",
+        }
         '''
         raise NotImplementedError
         
     @abstractmethod
-    def _insert_to_database(self, text):
+    def _insert_to_database(self, meta_data : Dict, context_chunks : List) -> None:
         '''
-        vectorstore DB에 저장합니다.
+        문서를 DB에 저장합니다.
         '''
         raise NotImplementedError
     
-    def add_pdf(self, pdf_path : str):
+    def add_pdf(self, pdf_path : str) -> None:
         
         if not os.path.exists(pdf_path):
             raise ValueError(f"Wrong path : {pdf_path}")
@@ -105,12 +114,14 @@ class AEYE_Langchain_Insert(ABC):
         if not os.path.basename(pdf_path).split(".")[-1] == "pdf":
             return
         
-        self.logger(f"adding {pdf_path} to pgvector...")
+        self.logger(f"adding {pdf_path} to DB...")
+        
         metadata, new_path = self._preprocess_pdf(pdf_path)
-        sections = self._get_documents_from_pdf(new_path)
-        text = self._preprocess_text(sections, new_path)
-        chunks = self._get_chunks(text)
+        sections           = self._get_documents_from_pdf(new_path)
+        text               = self._preprocess_text(sections, new_path)
+        chunks             = self._get_chunks(text)
         self._insert_to_database(metadata, chunks)
+        
         self.logger(f"succeed to add {pdf_path}")
 
 
@@ -141,25 +152,11 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         self.GROID_HEADER_URL = "http://localhost:8070/api/processHeaderDocument"
         self.GROBID_FULL_URL = "http://localhost:8070/api/processFulltextDocument"
 
-        conn = None
-        try:
-            conn = connection_pool.getconn()
-            create_table(conn)
-            conn.commit()
-        
-        except Exception as e:
-            conn.rollback()
-            print(f"Something wrong while creating table : {e}")
-            
-        finally:
-            if conn:
-                connection_pool.putconn(conn)
-
         self.embedding_model = SentenceTransformerEmbeddings(
                                     model_name="intfloat/multilingual-e5-base"
                                 )
 
-    def _preprocess_pdf(self, pdf_path : str) -> dict:
+    def _preprocess_pdf(self, pdf_path : str) -> Dict:
         
         parsed = TikaParser.from_file(pdf_path)
         metadata = parsed['metadata']
@@ -187,7 +184,7 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         lang = soup.find("text").get("xml:lang")
         abstract = soup.find("abstract").get_text(strip=True)
                 
-        def _save_renamed_file(pdf_path : str, title : str):
+        def _save_renamed_file(pdf_path : str, title : str) -> None:
                         
             if len(title) > 50:
                 name = self.name_chain.invoke({'abstract': abstract, 'title': title})
@@ -214,7 +211,7 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
                     "keywords": result['keywords'],
                   }
         
-        def _save_meta_info(new_path : str, payload):
+        def _save_meta_info(new_path : str, payload : Dict) -> None:
             
             root, ext = os.path.splitext(new_path)
             new_path_meta = root + "_meta.md"
@@ -247,7 +244,7 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         return sections
     
         
-    def _preprocess_text(self, sections_list : list, pdf_path : str) -> list:
+    def _preprocess_text(self, sections_list : List, pdf_path : str) -> List:
         
         sections = []
         for paragraph in sections_list:
@@ -256,6 +253,7 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
             
             # Reference [1, 2] 형태 제거
             sec_text = re.sub(r'\[[\d,\s]+\]', '', sec_text)
+            
             # Fig, Table, Fig, Appendix 제거
             pattern = re.compile(r'(?:Figure|Fig|Table|Appendix)s?\.?\s*[\d\s,-]+', re.IGNORECASE)
             sec_text = pattern.sub('', sec_text)
@@ -276,7 +274,7 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         return sections
         
     
-    def _get_chunks(self, sections):
+    def _get_chunks(self, sections : List) -> List:
         
         chunk_index_counter = 1
         
@@ -332,42 +330,17 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         return final_chunks
                     
                     
-    def _insert_to_database(self, meta_data, context_chunks) -> None:
+    def _insert_to_database(self, meta_data : Dict, context_chunks : List) -> None:
         
-        conn = None
-        try:
-            conn = connection_pool.getconn()
-            paper_id = insert_paper(
-                conn, 
-                title=meta_data['title'],
-                authors=meta_data['authors'],
-                published=meta_data['published'],
-                abstract=meta_data['abstract'],
-                language=meta_data['language'],
-                keywords=meta_data['keywords'],
-                category=meta_data['category']
-            )
-            
-            for chunk in context_chunks:
-                insert_paper_chunk(
-                    conn,
-                    paper_id=paper_id,
-                    chunk_index=chunk[0],
-                    section_title=chunk[1],
-                    char_start=chunk[2],
-                    char_end=chunk[3],
-                    content=chunk[4],
-                    embedding=chunk[5]
-                )
-            conn.commit()
-            
-        except Exception as e:
-            if conn:
-                conn.rollback()
-                print(f"Somethign wrong inserting to database : {e}")
-            
-            raise e
-            
-        finally:
-            if conn:
-                connection_pool.putconn(conn)
+        paper = Paper(
+            title=meta_data['title'],
+            authors=meta_data['authors'],
+            published=meta_data['published'],
+            abstract=meta_data['abstract'],
+            language=meta_data['language'],
+            keywords=meta_data['keywords'],
+            category=meta_data['category']
+        )
+        
+        with SessionLocal() as session:
+            insert_paper_and_chunks(session, paper, context_chunks)
