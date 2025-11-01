@@ -10,6 +10,7 @@ from langchain.text_splitter import SpacyTextSplitter
 from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_ollama import ChatOllama
 from tika import parser as TikaParser
 
@@ -95,12 +96,13 @@ class AEYE_Langchain_Insert(ABC):
             "char_start",
             "char_end",
             "content",
-        }
+            "embedding",
+        ]
         '''
         raise NotImplementedError
         
     @abstractmethod
-    def _insert_to_database(self, meta_data : Dict, context_chunks : List) -> None:
+    def _insert_to_database(self, meta_data : Dict, chunks : List) -> None:
         '''
         문서를 DB에 저장합니다.
         '''
@@ -121,8 +123,8 @@ class AEYE_Langchain_Insert(ABC):
         text               = self._preprocess_text(sections, new_path)
         chunks             = self._get_chunks(text)
         self._insert_to_database(metadata, chunks)
-        
         self.logger(f"succeed to add {pdf_path}")
+        return chunks
 
 
 class Grobid_Insert_Paper(AEYE_Langchain_Insert):
@@ -131,7 +133,8 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         self, 
         chunk_size : int = 1000, 
         chunk_overlap : int = 100,
-        logger : Callable = None
+        logger : Callable = None,
+        neo4jgraph = None,
         ):
         
         self.splitter = SpacyTextSplitter(chunk_size=chunk_size,
@@ -139,6 +142,10 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         
         #llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
         self.llm = ChatOllama(model="llama3", temperature=0)
+        
+        self.llm_transformer = LLMGraphTransformer(llm=self.llm)
+        self.neo4jgraph = neo4jgraph
+        
         self.output_parser = JsonOutputParser()
 
         self.name_prompt_temp = ChatPromptTemplate.from_template(template=name_prompt)
@@ -315,7 +322,6 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
             return []
         
         final_chunks = []
-        
         for chunk_data, embedding in zip(pre_embedding_chunks, embeddings):
             chunk_tuple = (
                 chunk_data['chunk_index'],
@@ -325,22 +331,52 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
                 chunk_data['content'],
                 embedding 
             )
+            
             final_chunks.append(chunk_tuple)
             
         return final_chunks
                     
                     
-    def _insert_to_database(self, meta_data : Dict, context_chunks : List) -> None:
+    def _insert_to_database(self, meta_data : Dict, chunks : List) -> None:
         
-        paper = Paper(
-            title=meta_data['title'],
-            authors=meta_data['authors'],
-            published=meta_data['published'],
-            abstract=meta_data['abstract'],
-            language=meta_data['language'],
-            keywords=meta_data['keywords'],
-            category=meta_data['category']
-        )
+        #save_to_postgresql(meta_data, chunks)
+        save_to_neo_4j(self.llm_transformer, chunks, self.neo4jgraph)
         
-        with SessionLocal() as session:
-            insert_paper_and_chunks(session, paper, context_chunks)
+        
+def save_to_postgresql(meta_data, chunks):
+                
+    paper = Paper(
+        title=meta_data['title'],
+        authors=meta_data['authors'],
+        published=meta_data['published'],
+        abstract=meta_data['abstract'],
+        language=meta_data['language'],
+        keywords=meta_data['keywords'],
+        category=meta_data['category']
+    )
+    
+    with SessionLocal() as session:
+        insert_paper_and_chunks(session, paper, chunks)
+        
+        
+def save_to_neo_4j(llm_transformer, chunks, neo4jgraph):
+    
+    print("===========================")
+    print("saving to neo4j...")    
+    documents = [Document(page_content=chunk[4]) for chunk in chunks]
+    graph_documents = llm_transformer.convert_to_graph_documents(documents)
+    
+    print(graph_documents)
+    neo4jgraph.add_graph_documents(
+        graph_documents,
+        baseEntityLabel=True,
+    )
+    
+    node_count_query = """
+        MATCH (n)
+        RETURN count(n) AS TotalNodes"""
+    node_result = neo4jgraph.query(node_count_query)
+    print(node_result)
+    
+    print("===========================")
+    

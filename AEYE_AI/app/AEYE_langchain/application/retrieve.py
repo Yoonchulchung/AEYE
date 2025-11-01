@@ -3,7 +3,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 
-class AEYE_langchain_search:
+class AEYE_langchain_Retreive:
         
     _instance = None
     def __new__(cls, *args, **kwargs):

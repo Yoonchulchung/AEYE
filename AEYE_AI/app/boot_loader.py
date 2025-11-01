@@ -1,3 +1,5 @@
+from langchain_core.prompts import ChatPromptTemplate
+
 from AEYE.application.AI.inference import InferenceGPU
 from AEYE.application.AI.loader import GPUModelLoader
 from AEYE.application.AI.models.llm import shutdown_llm
@@ -5,16 +7,15 @@ from AEYE.application.AI.registry import llm_register, vision_register
 from AEYE.application.logger import AEYE_log
 from AEYE.application.process import Process
 from AEYE.application.registry import get_cfg
-from AEYE_langchain.langchain import init_langchain
-from AEYE_langchain.search import AEYE_langchain_search
+from AEYE_langchain.application.insert import Grobid_Insert_Paper
+from AEYE_langchain.application.retrieve import AEYE_langchain_Retreive
+from inference.domain.result import Result
 from inference.infra.repository.request_repo import RequestRepository
 from inference.infra.repository.result_repo import ResultRepository
-from inference.domain.result import Result
+
 
 async def bootstrap():
     cfg = get_cfg()
-
-    init_langchain()
 
     registry = {
         "vision_register" : vision_register,
@@ -31,7 +32,10 @@ async def bootstrap():
     }
     
     model_loader = GPUModelLoader(cfg, registry, AEYE_log)
-    inference_gpu = InferenceGPU(model_loader, cfg, AEYE_langchain_search.get_instance())
+    langchain_retrieve = AEYE_langchain_Retreive(model_loader.get_llm(), None, ChatPromptTemplate)
+    Grobid_Insert_Paper(logger=AEYE_log)
+    
+    inference_gpu = InferenceGPU(model_loader, cfg, langchain_retrieve)
     gpu = Process(cfg, inference_gpu, repo, entity, AEYE_log)
 
     return gpu
