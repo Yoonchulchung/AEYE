@@ -17,6 +17,8 @@ from tika import parser as TikaParser
 from AEYE_langchain.domain.insert import Paper
 from AEYE_langchain.infra.repository.insert import insert_paper_and_chunks
 from database import SessionLocal
+from langchain_chroma import Chroma
+from FlagEmbedding import BGEM3FlagModel
 
 from .prompt import name_prompt, preprocess_pdf_prompt
 
@@ -134,17 +136,13 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
         chunk_size : int = 1000, 
         chunk_overlap : int = 100,
         logger : Callable = None,
-        neo4jgraph = None,
         ):
         
         self.splitter = SpacyTextSplitter(chunk_size=chunk_size,
                                           chunk_overlap=chunk_overlap)
         
-        #llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
         self.llm = ChatOllama(model="llama3", temperature=0)
-        
-        self.llm_transformer = LLMGraphTransformer(llm=self.llm)
-        self.neo4jgraph = neo4jgraph
+        self.embedding_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
         
         self.output_parser = JsonOutputParser()
 
@@ -297,51 +295,54 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
                 }
             )
             split_chunks = self.splitter.split_documents([doc])
-
-            for chunk in split_chunks:
-                content = chunk.page_content            
-                char_start = original_text.find(content)
+            chunk_contents.append(split_chunks)
+            
+        #     for chunk in split_chunks:
+        #         content = chunk.page_content            
+        #         char_start = original_text.find(content)
                 
-                if char_start == -1:
+        #         if char_start == -1:
                     
-                    char_start = 0
+        #             char_start = 0
                     
-                char_end = char_start + len(content)
-                pre_embedding_chunks.append({
-                    "chunk_index": chunk_index_counter,
-                    "section_title": chunk.metadata['section_title'],
-                    "char_start": char_start,
-                    "char_end": char_end,
-                    "content": content
-                })
-                chunk_contents.append(content)
-                chunk_index_counter += 1
-        if chunk_contents:
-            embeddings = self.embedding_model.embed_documents(chunk_contents)
-        else:
-            return []
+        #         char_end = char_start + len(content)
+        #         pre_embedding_chunks.append({
+        #             "chunk_index": chunk_index_counter,
+        #             "section_title": chunk.metadata['section_title'],
+        #             "char_start": char_start,
+        #             "char_end": char_end,
+        #             "page_content": content
+        #         })
+        #         chunk_contents.append(content)
+        #         chunk_index_counter += 1
+        # if chunk_contents:
+        #     embeddings = self.embedding_model.embed_documents(chunk_contents)
+        # else:
+        #     return []
+        
+        return split_chunks
         
         final_chunks = []
-        for chunk_data, embedding in zip(pre_embedding_chunks, embeddings):
-            chunk_tuple = (
-                chunk_data['chunk_index'],
-                chunk_data['section_title'],
-                chunk_data['char_start'],
-                chunk_data['char_end'],
-                chunk_data['content'],
-                embedding 
-            )
+        # for chunk_data, embedding in zip(pre_embedding_chunks, embeddings):
+        #     chunk_tuple = (
+        #         chunk_data['chunk_index'],
+        #         chunk_data['section_title'],
+        #         chunk_data['char_start'],
+        #         chunk_data['char_end'],
+        #         chunk_data['content'],
+        #         embedding 
+        #     )
             
-            final_chunks.append(chunk_tuple)
+        #     final_chunks.append(chunk_tuple)
             
-        return final_chunks
+        # return final_chunks
                     
                     
     def _insert_to_database(self, meta_data : Dict, chunks : List) -> None:
         
         #save_to_postgresql(meta_data, chunks)
-        save_to_neo_4j(self.llm_transformer, chunks, self.neo4jgraph)
-        
+        #save_to_neo4j(self.llm_transformer, chunks, self.neo4jgraph)
+        save_to_chroma(chunks, self.embedding_model)
         
 def save_to_postgresql(meta_data, chunks):
                 
@@ -359,14 +360,13 @@ def save_to_postgresql(meta_data, chunks):
         insert_paper_and_chunks(session, paper, chunks)
         
         
-def save_to_neo_4j(llm_transformer, chunks, neo4jgraph):
+def save_to_neo4j(llm_transformer, chunks, neo4jgraph):
     
     print("===========================")
     print("saving to neo4j...")    
     documents = [Document(page_content=chunk[4]) for chunk in chunks]
     graph_documents = llm_transformer.convert_to_graph_documents(documents)
-    
-    print(graph_documents)
+
     neo4jgraph.add_graph_documents(
         graph_documents,
         baseEntityLabel=True,
@@ -379,4 +379,8 @@ def save_to_neo_4j(llm_transformer, chunks, neo4jgraph):
     print(node_result)
     
     print("===========================")
+    
+
+def save_to_chroma(chunks : List[Document], embedding_function) -> None:
+    db = Chroma.from_documents(chunks, embedding_function, persist_directory="./chroma_db")
     
