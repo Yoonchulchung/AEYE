@@ -142,7 +142,6 @@ class Grobid_Insert_Paper(AEYE_Langchain_Insert):
                                           chunk_overlap=chunk_overlap)
         
         self.llm = ChatOllama(model="llama3", temperature=0)
-        self.embedding_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
         
         self.output_parser = JsonOutputParser()
 

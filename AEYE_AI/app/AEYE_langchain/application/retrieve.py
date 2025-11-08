@@ -1,8 +1,10 @@
 from langchain.vectorstores.base import VectorStoreRetriever
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_chroma import Chroma
+from langchain_community.embeddings import SentenceTransformerEmbeddings
 
-
+    
 class AEYE_langchain_Retreive:
         
     _instance = None
@@ -19,15 +21,22 @@ class AEYE_langchain_Retreive:
     
     def __init__(self, 
                  llm,
-                 retriever: VectorStoreRetriever, 
-                 prompt : ChatPromptTemplate,
+                 retriever: VectorStoreRetriever = None, 
+                 prompt : ChatPromptTemplate = None,
                  ):
         
         self.llm = llm
+        self.embedding_model = SentenceTransformerEmbeddings(
+                                            model_name="intfloat/multilingual-e5-base"
+                                        )
         self.prompt = prompt
-        self.retriever = retriever
+        self.retriever = Chroma(
+                persist_directory="./chroma_db",
+                embedding_function=self.embedding_model
+            )
         
         self.chain = self.prompt | self.llm | StrOutputParser()
+        
         
     def _format_query(self, text: str) -> str:
         return f"query: {text}"
@@ -56,10 +65,8 @@ class AEYE_langchain_Retreive:
         return "\n\n---\n\n".join(parts)
     
     def search(self, question : str) -> str:
-        
-        q = self._format_query(question)
-        
-        docs = self.retriever.get_relevant_documents(q)
+                
+        docs = self.retriever.similarity_search(question)
         context_text = self._make_context_string(docs, max_chars=2000)
 
         return self.chain.invoke({"context": context_text, "question": question})
