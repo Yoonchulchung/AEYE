@@ -5,25 +5,32 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from PIL import Image
 
-from AEYE.application.process import Process
+from inference.infra.repository.result_repo import ResultRepository
+from inference.infra.repository.request_repo import RequestRepository
 
 router = APIRouter()
 
-@router.get("/result")
-async def result(request: Request, ):
-    gpu = Process.get_instance()
+@router.get("/inference/result/{job_id}")
+async def result(job_id: str):
+  
+    result_repo = ResultRepository()
+    result = result_repo.search_by_job_id(job_id)
     
-    img, job_id, message = await gpu.get_result()
+    request_repo = RequestRepository()
+    request = request_repo.search_by_job_id(job_id)
     
-    if not message:
+    if not result:
         return _nothing()
     
+    img_path = request.img_path
+    img = Image.open(img_path).convert("RGB")
     data_url = pil_to_data_url(img, fmt="PNG")
     
-    pred = message["pred"]
-    llm_result = message["llm_result"]
+    classification = result.classification
+    llm_result = result.result
+    summary= result.result_summary
 
-    page = _show_image(data_url, pred, llm_result)
+    page = _show_image(data_url, classification, llm_result, summary)
     return HTMLResponse(page)
     
 def _nothing():
@@ -41,7 +48,7 @@ def _nothing():
             )
     
 
-def _show_image(data_url: str, pred : str, llm_result: str) -> str:
+def _show_image(data_url: str, classification : str, result: str, summary : str) -> str:
     html_page = f"""
     <html>
       <head>
@@ -100,8 +107,9 @@ def _show_image(data_url: str, pred : str, llm_result: str) -> str:
             <button onclick="location.reload()">새로고침</button>
           </div>
           <img src="{data_url}" alt="inference image" />
-          <div class="message"><strong>추론 결과:</strong><br>{pred}</div>
-          <div class="message"><strong>진단 방법:</strong><br>{llm_result}</div>
+          <div class="message"><strong>추론 결과:</strong><br>{classification}</div>
+          <div class="message"><strong>진단 방법:</strong><br>{result}</div>
+          <div class="message"><strong>요약:</strong><br>{summary}</div>
         </div>
       </body>
     </html>

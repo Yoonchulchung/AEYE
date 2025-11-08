@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Request, UploadFile
 
 from AEYE.application.process import Process
 from AEYE.application.registry import get_cfg
-from inference.application.router.parser import RequestParserTensor
+from inference.application.parser import RequestParserTensor
 from fastapi.responses import JSONResponse
 
 router = APIRouter()
